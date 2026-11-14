@@ -1,0 +1,13 @@
+{
+  "items": [
+    {
+      "title": "Replace with a real observed trend title",
+      "category": "Beauty",
+      "source_name": "Your authorized data provider",
+      "source_url": "https://example.com/real-trend-source",
+      "observed_at": "2026-11-14T08:00:00-08:00",
+      "metric_label": "views",
+      "metric_value": "Only real provider values"
+    }
+  ]
+}
