@@ -42,6 +42,15 @@ function DouyinReviewPanel() {
   });
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [paste, setPaste] = useState('');
+  const saveReview = (raw: string) => {
+    if (raw.length > 500_000) throw new Error('文件过大');
+    const next = parseDouyinReview(raw);
+    localStorage.setItem(douyinReviewKey, JSON.stringify(next));
+    setReview(next);
+    setStatus('已导入并保存在当前浏览器。');
+  };
 
   return <section className="panel p-5 mb-5" aria-labelledby="douyin-review-title">
     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -50,7 +59,7 @@ function DouyinReviewPanel() {
         <p className="muted mt-1">{review ? `${review.start} 至 ${review.end} · 导入快照` : '导入抖音账号数据、重点作品和 7 天内容计划。'}</p>
         <p className="muted mt-1">数据保存在当前浏览器。更新时导入新的复盘文件。</p>
       </div>
-      <label className="btn secondary cursor-pointer focus-within:ring-2 focus-within:ring-brand">
+      <div className="flex flex-wrap gap-2"><label className="btn secondary cursor-pointer focus-within:ring-2 focus-within:ring-brand">
         {busy ? '正在导入…' : '导入抖音复盘'}
         <input className="sr-only" type="file" accept=".json,application/json" disabled={busy} onChange={async event => {
           const input = event.currentTarget;
@@ -59,10 +68,7 @@ function DouyinReviewPanel() {
           setBusy(true);
           try {
             if (file.size > 500_000) throw new Error('文件过大');
-            const next = parseDouyinReview(await file.text());
-            localStorage.setItem(douyinReviewKey, JSON.stringify(next));
-            setReview(next);
-            setStatus('已导入并保存在当前浏览器。');
+            saveReview(await file.text());
           } catch {
             setStatus('无法导入。请检查复盘 JSON 文件格式及浏览器存储权限。');
           } finally {
@@ -71,7 +77,22 @@ function DouyinReviewPanel() {
           }
         }}/>
       </label>
+      <button className="btn secondary" aria-expanded={pasteOpen} onClick={() => setPasteOpen(!pasteOpen)}>粘贴复盘数据</button></div>
     </div>
+    {pasteOpen && <div className="space-y-2 mt-3">
+      <label className="block text-sm font-medium">复盘 JSON
+        <textarea className="field mt-1" rows={3} value={paste} onChange={event => setPaste(event.target.value)}/>
+      </label>
+      <button className="btn primary" disabled={!paste.trim()} onClick={() => {
+        try {
+          saveReview(paste);
+          setPaste('');
+          setPasteOpen(false);
+        } catch {
+          setStatus('无法导入。请检查复盘 JSON 格式及浏览器存储权限。');
+        }
+      }}>保存抖音复盘</button>
+    </div>}
     <p className="muted mt-2" role="status">{status}</p>
     {review && <>
       <dl className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
