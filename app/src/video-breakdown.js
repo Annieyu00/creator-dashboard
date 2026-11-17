@@ -189,11 +189,77 @@ function getYouTubeId(value) {
   }
 }
 
+function findDouyinShare(value) {
+  const links = value.matchAll(/https?:\/\/[^\s，。！？、]+/gi);
+  for (const match of links) {
+    let url;
+    try {
+      url = new URL(match[0]);
+    } catch {
+      continue;
+    }
+    if (!["v.douyin.com", "www.douyin.com", "douyin.com", "m.douyin.com"].includes(url.hostname)) continue;
+
+    const sharedText = value.slice(0, match.index);
+    const workMarker = sharedText.match(/【([^】]+)的作品】\s*([\s\S]*)$/);
+    const caption = workMarker?.[2]?.trim() ?? "";
+    return { url: url.href, author: workMarker?.[1] ?? "", caption };
+  }
+  return null;
+}
+
+function renderLinkSummary({ platform, author, title, source, scope, heading }) {
+  const hasNumber = /\d/.test(title);
+  const hooks = detectHook(title).map(hook => hook.t);
+  const topic = $("fTopic").value.trim();
+  const observation = hooks.length
+    ? "文字里的吸引点：" + hooks.join("、") + "。"
+    : hasNumber ? "数字让观众提前知道内容的范围或数量。"
+    : "可以先找出这段文字承诺回答的问题，再想想这个问题对谁有用。";
+  const adaptation = (topic ? "用在「" + topic + "」：" : "借鉴方法：") + (hasNumber
+    ? "把你能实际讲清的经验或步骤写进标题，开场先展示其中一个结果。"
+    : "把原文的场景换成你经历过的一件事，再说清观众看完会得到什么。");
+
+  $("linkHeading").textContent = heading;
+  $("linkTitle").textContent = title;
+  $("linkAuthor").textContent = author ? platform + " · " + author : platform;
+  $("linkObservation").textContent = observation;
+  $("linkAdaptation").textContent = adaptation;
+  $("linkScope").textContent = scope;
+  $("linkSummary").hidden = false;
+  linkReference = [
+    "资料范围：" + scope,
+    "参考链接：" + source,
+    "参考文字：" + title.slice(0, 800),
+    observation,
+    adaptation
+  ].join("\n");
+}
+
 async function analyzePublicLink(value) {
   const error = $("formErr");
+  const douyin = findDouyinShare(value);
+  if (douyin) {
+    if (!douyin.caption) {
+      error.textContent = "这段分享没有附带作品文案。可以回抖音复制完整分享文字；如果分享仍只有网址，请补充字幕或口播。";
+      error.classList.add("show");
+      return;
+    }
+    error.classList.remove("show");
+    renderLinkSummary({
+      platform: "抖音",
+      author: douyin.author,
+      title: douyin.caption,
+      source: douyin.url,
+      heading: "抖音分享文字拆解",
+      scope: "仅依据你粘贴的分享文案。视频画面、口播和播放数据尚未读取。"
+    });
+    return;
+  }
+
   const id = getYouTubeId(value);
   if (!id) {
-    error.textContent = "这个平台还不能从链接读取正文。链接会保留，可以粘贴字幕或口播继续拆解。";
+    error.textContent = "目前无法从这个链接读取视频正文。你可以粘贴字幕或口播继续拆解。";
     error.classList.add("show");
     return;
   }
@@ -215,31 +281,14 @@ async function analyzePublicLink(value) {
     if (typeof data.title !== "string" || !data.title.trim()) throw Error("Missing title");
     if (request !== linkRequest) return;
 
-    const title = data.title.trim();
-    const author = typeof data.author_name === "string" ? data.author_name : "";
-    const hooks = detectHook(title).map(hook => hook.t);
-    const topic = $("fTopic").value.trim();
-    const containsNumber = /\d/.test(title);
-    const observation = hooks.length
-      ? "标题里的吸引点：" + hooks.join("、") + "。"
-      : containsNumber ? "标题里的数字让观众提前知道内容的范围或数量。"
-      : "可以从标题拆出它承诺回答的问题，再看这个问题对谁有用。";
-    const adaptation = (topic ? "用在「" + topic + "」：" : "借鉴方法：") + (containsNumber
-      ? "把你能实际讲清的经验或步骤写进标题，开场先展示其中一个结果。"
-      : "用自己的真实场景替换原标题中的场景，再用一句话说清观众看完会得到什么。");
-
-    $("linkTitle").textContent = title;
-    $("linkAuthor").textContent = author ? "YouTube · " + author : "YouTube";
-    $("linkObservation").textContent = observation;
-    $("linkAdaptation").textContent = adaptation;
-    $("linkSummary").hidden = false;
-    linkReference = [
-      "资料范围：只读取了公开视频标题和作者。没有字幕、画面、互动数据。",
-      "参考链接：" + source,
-      "参考标题：" + title,
-      observation,
-      adaptation
-    ].join("\n");
+    renderLinkSummary({
+      platform: "YouTube",
+      author: typeof data.author_name === "string" ? data.author_name : "",
+      title: data.title.trim(),
+      source,
+      heading: "YouTube 公开标题拆解",
+      scope: "仅依据公开标题。画面、口播和播放表现需要额外资料才能判断。"
+    });
   } catch {
     if (request !== linkRequest) return;
     error.textContent = "YouTube 没有返回标题。请确认视频公开且可嵌入，或粘贴字幕继续。";

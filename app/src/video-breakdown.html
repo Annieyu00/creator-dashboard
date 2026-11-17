@@ -38,8 +38,8 @@
 </div>
 
 <label class="f" for="fUrl">参考视频链接 <span class="opt">选填</span></label>
-<input type="url" id="fUrl" placeholder="粘贴抖音、小红书或其他公开视频链接" style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit" />
-<p class="hint">公开 YouTube 链接可直接拆解标题。抖音、小红书需要视频字幕或口播，才能拆解内容。</p>
+<input type="text" inputmode="url" id="fUrl" placeholder="粘贴抖音完整分享文字或公开视频链接" style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit" />
+<p class="hint">抖音分享文字若带有作品文案，可以直接拆解文案。公开 YouTube 链接可拆解标题。</p>
 <label class="f" for="fScript">文案 / 口播稿 / 字幕文本</label>
 <textarea id="fScript" placeholder="把整条视频的文案或字幕粘贴到这里，一句一行效果最好……"></textarea>
 <p class="hint">拆解靠的就是这段文本：钩子、转折、干货、结尾引导都会从里面识别。</p>
@@ -65,12 +65,12 @@
 
 <button class="btn primary" id="btnAnalyze" type="button">开始拆解</button>
 <section id="linkSummary" class="panel" hidden aria-live="polite" style="margin-top:14px">
-  <h2>链接拆解 · 公开标题</h2>
+  <h2 id="linkHeading">链接拆解 · 公开标题</h2>
   <p id="linkTitle" class="hook-quote"></p>
   <p id="linkAuthor" class="sub"></p>
   <p id="linkObservation"></p>
   <p id="linkAdaptation"></p>
-  <p class="hint">本次只分析公开视频标题。画面、口播和播放表现需要额外资料才能判断。</p>
+  <p id="linkScope" class="hint"></p>
   <button class="btn small" id="btnUseLink" type="button">用这个角度写详细脚本</button>
 </section>
 <div class="err" id="formErr" role="alert"></div>
