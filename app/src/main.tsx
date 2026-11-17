@@ -167,7 +167,8 @@ useEffect(() => () => {
 
 const generate = () => {
   const topic = aiTitle.trim();
-  if (!topic || scriptRunning.current) return;
+  const details = scriptDetails.trim();
+  if ((!topic && !details) || scriptRunning.current) return;
   setScriptError('');
   if (!('gpu' in navigator)) {
     setScriptError('当前浏览器无法使用 WebGPU。请在支持 WebGPU 的电脑 Chrome 中打开，确认已启用图形加速。');
@@ -200,12 +201,109 @@ const generate = () => {
       };
       scriptWorker.current = worker;
     }
-    scriptWorker.current.postMessage({ topic, platform: aiPlatform, tone: aiTone, details: scriptDetails.trim() });
+    scriptWorker.current.postMessage({ topic, platform: aiPlatform, tone: aiTone, details });
   } catch {
     stop('无法启动 AI。请刷新网页后再试。');
   }
 };
-const ai=<>{heading('AI 创作中心','从选题到脚本，快速整理创作思路。')}<div className="grid lg:grid-cols-5 gap-5"><div className="panel p-6 lg:col-span-2 space-y-4"><h2 className="h2">创作设置</h2><label className="block text-sm font-medium">创作主题<input className="field mt-2" value={aiTitle} maxLength={500} disabled={!!scriptProgress} onChange={e=>setAiTitle(e.target.value)} placeholder="例如：回美国上班第一天"/></label><label className="block text-sm font-medium">发布平台<select className="field mt-2" value={aiPlatform} disabled={!!scriptProgress} onChange={e=>setAiPlatform(e.target.value)}>{platforms.map(p=><option key={p}>{p}</option>)}</select></label><label className="block text-sm font-medium">表达风格<select className="field mt-2" value={aiTone} disabled={!!scriptProgress} onChange={e=>setAiTone(e.target.value)}>{['真实自然','轻松有趣','干货专业','温柔治愈'].map(p=><option key={p}>{p}</option>)}</select></label><label className="block text-sm font-medium">想讲的真实细节（选填）<textarea className="field mt-2" rows={4} maxLength={1000} value={scriptDetails} disabled={!!scriptProgress} onChange={e=>setScriptDetails(e.target.value)} placeholder="想讲给谁听？发生了什么？手上有哪些镜头？写一两句就行。"/></label><button type="button" className="btn primary w-full" disabled={!aiTitle.trim() || !!scriptProgress} onClick={generate}><Sparkles size={17}/>{scriptProgress ? '生成中…' : 'AI 生成脚本'}</button><p className="text-xs leading-relaxed text-slate-500">AI 在支持 WebGPU 的电脑浏览器中运行。首次使用需要联网下载模型。</p>{scriptProgress && <p role="status" className="text-sm text-slate-600">{scriptProgress}</p>}{scriptError && <p role="alert" className="text-sm text-rose-700">{scriptError}</p>}</div><div className="panel p-6 lg:col-span-3"><div className="flex justify-between items-center mb-4"><h2 className="h2">脚本编辑器</h2><div className="flex gap-2"><button className="btn secondary !py-2" onClick={()=>{navigator.clipboard.writeText(aiResult);notify('已复制')}}><Copy size={15}/>复制</button><button className="btn primary !py-2" onClick={()=>{if(!aiTitle.trim())return notify('请填写主题');if(!aiResult.trim())return notify('请先生成或填写脚本');setData(d=>({...d,contents:[{id:uid(),title:aiTitle,platform:aiPlatform,status:'草稿',date:today(),script:aiResult,views:0,likes:0,comments:0,followers:0},...d.contents]}));notify('已保存到内容库')}}><Bookmark size={15}/>保存草稿</button></div></div><textarea className="field min-h-96 !leading-7" value={aiResult} onChange={e=>setAiResult(e.target.value)} placeholder="填写主题并点击「AI 生成脚本」，也可以直接在这里自由编辑…"/></div></div></>;
+function saveScriptDraft() {
+  const script = aiResult.trim();
+  if (!script) return notify('请先生成或填写脚本');
+  const titleLine = script.match(/^\s*(?:\*\*|#+\s*)?标题[：:]\s*([^\n]+)/m)?.[1];
+  const title = aiTitle.trim() || titleLine?.replace(/\*\*/g, '').trim() || '短视频脚本';
+  setData(current => ({
+    ...current,
+    contents: [{
+      id: uid(), title, platform: aiPlatform, status: '草稿', date: today(),
+      script, views: 0, likes: 0, comments: 0, followers: 0,
+    }, ...current.contents],
+  }));
+  notify('已保存到内容库');
+}
+
+const ai = <>
+  {heading('AI 创作中心', '把零散想法整理成一条能直接拍的短视频。')}
+  <div className="grid gap-5 lg:grid-cols-5">
+    <div className="panel space-y-4 p-6 lg:col-span-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="h2">我的思路</h2>
+        <button type="button" className="text-sm text-brand disabled:opacity-50"
+          disabled={!!scriptProgress || !!scriptDetails.trim()}
+          onClick={() => setScriptDetails('想拍回美国上班第一天，像跟朋友聊天。\n能拍出门、通勤、下班后的镜头。\n最想讲的是重新适应上班节奏的感觉。\n结尾可以问大家，长假回来最难适应什么？')}>
+          填入示范思路
+        </button>
+      </div>
+      <label className="block">
+        <span className="sr-only">我的思路</span>
+        <textarea className="field min-h-48 !leading-7" rows={8} maxLength={3000}
+          value={scriptDetails} disabled={!!scriptProgress}
+          onChange={e => setScriptDetails(e.target.value)}
+          placeholder="随手写下你想讲什么、发生了什么、能拍什么。几句碎片也可以，不用先写好标题。" />
+      </label>
+      <label className="block text-sm font-medium">创作主题（可选）
+        <input className="field mt-2" value={aiTitle} maxLength={500} disabled={!!scriptProgress}
+          onChange={e => setAiTitle(e.target.value)} placeholder="例如：回美国上班第一天" />
+      </label>
+      <div className="grid grid-cols-2 gap-3">
+        <label className="block text-sm font-medium">发布平台
+          <select className="field mt-2" value={aiPlatform} disabled={!!scriptProgress}
+            onChange={e => setAiPlatform(e.target.value)}>
+            {platforms.map(platform => <option key={platform}>{platform}</option>)}
+          </select>
+        </label>
+        <label className="block text-sm font-medium">表达风格
+          <select className="field mt-2" value={aiTone} disabled={!!scriptProgress}
+            onChange={e => setAiTone(e.target.value)}>
+            {['真实自然','轻松有趣','干货专业','温柔治愈'].map(tone => <option key={tone}>{tone}</option>)}
+          </select>
+        </label>
+      </div>
+      <button type="button" className="btn primary w-full"
+        disabled={(!aiTitle.trim() && !scriptDetails.trim()) || !!scriptProgress} onClick={generate}>
+        <Sparkles size={17}/>{scriptProgress ? '生成中…' : 'AI 整理成完整脚本'}
+      </button>
+      <p className="text-xs leading-relaxed text-slate-500">首次使用需要联网下载模型。请用支持 WebGPU 的电脑浏览器。</p>
+      {scriptProgress && <p role="status" className="text-sm text-slate-600">{scriptProgress}</p>}
+      {scriptError && <p role="alert" className="text-sm text-rose-700">{scriptError}</p>}
+    </div>
+    <div className="panel flex flex-col p-6 lg:col-span-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="h2">脚本编辑器</h2>
+        <div className="flex gap-2">
+          <button type="button" className="btn secondary !py-2" disabled={!aiResult.trim() || !!scriptProgress}
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(aiResult);
+                notify('已复制');
+              } catch {
+                notify('请在编辑器内手动复制');
+              }
+            }}><Copy size={15}/>复制</button>
+          <button type="button" className="btn primary !py-2" disabled={!aiResult.trim() || !!scriptProgress}
+            onClick={saveScriptDraft}><Bookmark size={15}/>保存草稿</button>
+        </div>
+      </div>
+      <textarea aria-label="完整脚本" className="field min-h-96 flex-1 !leading-7" value={aiResult}
+        disabled={!!scriptProgress} onChange={e => setAiResult(e.target.value)}
+        placeholder="完整脚本会显示在这里，包括标题、开场、分镜、口播和结尾。"/>
+    </div>
+  </div>
+  <section className="panel mt-5 p-6" aria-labelledby="script-references">
+    <h2 id="script-references" className="h2 mb-4">拍法参考</h2>
+    <div className="grid gap-3 md:grid-cols-2">
+      <a className="block rounded-xl border border-slate-200 p-4 hover:border-brand"
+        href="https://www.youtube.com/watch?v=G95UnUuBaTA" target="_blank" rel="noopener noreferrer">
+        <span className="flex items-center gap-2 font-semibold"><Video size={16}/>上班日常 Vlog <ExternalLink size={14}/></span>
+        <span className="muted mt-2 block">Rebekah Joy · 参考怎么用出门、上班和下班三个场景串起一天。</span>
+      </a>
+      <a className="block rounded-xl border border-slate-200 p-4 hover:border-brand"
+        href="https://www.youtube.com/watch?v=ZeLnr3AkRLg" target="_blank" rel="noopener noreferrer">
+        <span className="flex items-center gap-2 font-semibold"><Video size={16}/>带情绪主线的上班 Vlog <ExternalLink size={14}/></span>
+        <span className="muted mt-2 block">参考怎么把「提不起劲」这样的感受放进上班日常。</span>
+      </a>
+    </div>
+  </section>
+</>;
 const schedule=<>{heading('发布计划','统一安排多平台内容，追踪每条作品的发布状态。','安排新内容',()=>open('content'))}<div className="grid md:grid-cols-4 gap-3 mb-5">{contentStatuses.map(s=><div className="panel p-4" key={s}><div className="muted">{s}</div><div className="text-2xl font-bold mt-2">{data.contents.filter(c=>c.status===s).length}</div></div>)}</div><div className="panel overflow-x-auto"><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500"><tr>{['内容','平台','计划日期','状态','操作'].map(t=><th key={t} className="p-4">{t}</th>)}</tr></thead><tbody>{[...data.contents].sort((a,b)=>a.date.localeCompare(b.date)).map(c=><tr className="border-t border-slate-100" key={c.id}><td className="p-4 font-medium">{c.title}</td><td className="p-4">{c.platform}</td><td className="p-4"><input type="date" className="field !p-2" value={c.date} onChange={e=>update('contents',c.id,{date:e.target.value})}/></td><td className="p-4"><select className="field !p-2" value={c.status} onChange={e=>update('contents',c.id,{status:e.target.value})}>{contentStatuses.map(s=><option key={s}>{s}</option>)}</select></td><td className="p-4"><button className="text-brand mr-4" onClick={()=>open('content',c)}>编辑</button><button className="text-rose-400" onClick={()=>remove('contents',c.id)}>删除</button></td></tr>)}</tbody></table></div></>;
 const analytics=<>{heading('数据复盘','记录真实发布表现，找到适合自己的内容方向。')}<DouyinReviewPanel/><div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">{[['累计曝光',totals.views],['累计互动',totals.engagement],['新增粉丝',totals.followers],['已发布内容',totals.count]].map(([t,n])=><div className="panel p-5" key={t}><div className="muted">{t}</div><div className="text-3xl font-bold mt-3">{fmt(Number(n))}</div></div>)}</div><div className="panel p-6 mb-5"><h2 className="h2 mb-4">内容曝光对比</h2><div className="space-y-4">{published.length?published.map(c=><div key={c.id}><div className="flex justify-between text-sm mb-1"><span className="truncate max-w-2/3">{c.title}</span><b>{fmt(c.views)}</b></div><div className="h-3 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-brand rounded-full" style={{width:`${totals.views?Math.max(3,c.views/Math.max(...published.map(x=>x.views))*100):0}%`}}/></div></div>):empty('发布内容后可以查看数据对比')}</div></div><div className="panel overflow-x-auto"><div className="flex justify-between items-center p-5"><h2 className="h2">作品数据明细</h2><button className="btn secondary" onClick={()=>{const rows=[['标题','平台','日期','曝光','点赞','评论','新增粉丝'],...published.map(c=>[c.title,c.platform,c.date,c.views,c.likes,c.comments,c.followers])];const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='creator-analytics.csv';a.click();URL.revokeObjectURL(a.href)}}><Download size={15}/>导出 CSV</button></div><table className="w-full text-sm"><thead className="bg-slate-50"><tr>{['标题','平台','曝光','点赞','评论','新增粉丝','操作'].map(x=><th className="p-4 text-left text-slate-500" key={x}>{x}</th>)}</tr></thead><tbody>{published.map(c=><tr className="border-t border-slate-100" key={c.id}><td className="p-4 font-medium">{c.title}</td><td className="p-4">{c.platform}</td>{[c.views,c.likes,c.comments,c.followers].map((n,i)=><td className="p-4" key={i}>{fmt(n)}</td>)}<td className="p-4"><button className="text-brand" onClick={()=>open('content',c)}>录入/编辑</button></td></tr>)}</tbody></table></div><p className="text-xs text-slate-400 mt-4">数据来自你手动录入的作品表现，不是平台自动同步；未录入上周历史数据，因此暂不显示虚构的环比趋势。</p></>;
 const legacy=<>{heading('原版每日打卡','保留原网站的 7 天挑战、任务编辑、笔记、视频表现与分析。')}<div className="panel p-3"><div className="flex justify-between items-center p-3"><span className="text-sm text-slate-500">与原网站使用相同的浏览器本地数据键；请在原网站相同域名下打开。</span><a className="text-brand text-sm" href="./legacy-checkin.html" target="_blank" rel="noreferrer">单独打开 ↗</a></div><iframe title="原版每日打卡" src="./legacy-checkin.html" className="w-full border-0 rounded-xl" style={{height:'1250px'}} /></div></>;
