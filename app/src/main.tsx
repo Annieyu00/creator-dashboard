@@ -221,8 +221,16 @@ function saveScriptDraft() {
   notify('已保存到内容库');
 }
 
+useEffect(() => {
+  if (page !== 'AI 创作中心' || window.location.hash !== '#script-references') return;
+  document.getElementById('script-references')?.scrollIntoView();
+}, [page]);
+
 const ai = <>
-  {heading('AI 创作中心', '把零散想法整理成一条能直接拍的短视频。')}
+  <div className="flex flex-wrap items-start justify-between gap-2">
+    {heading('AI 创作中心', '把零散想法整理成一条能直接拍的短视频。')}
+    <a className="btn secondary mb-4" href="#script-references"><FileText size={17}/>看文字版拍法</a>
+  </div>
   <div className="grid gap-5 lg:grid-cols-5">
     <div className="panel space-y-4 p-6 lg:col-span-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -288,8 +296,8 @@ const ai = <>
         placeholder="完整脚本会显示在这里，包括标题、开场、分镜、口播和结尾。"/>
     </div>
   </div>
-  <section className="panel mt-5 p-6" aria-labelledby="script-references">
-    <h2 id="script-references" className="h2 mb-4">拍法参考</h2>
+  <section id="script-references" className="panel mt-5 scroll-mt-20 p-6" aria-labelledby="script-references-title">
+    <h2 id="script-references-title" className="h2 mb-4">文字版拍法参考</h2>
     <div className="grid gap-4 md:grid-cols-2">
       <article className="rounded-xl border border-slate-200 p-4">
         <h3 className="font-semibold">上班日常 Vlog</h3>
