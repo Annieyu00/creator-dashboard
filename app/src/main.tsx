@@ -1,3 +1,4 @@
+import { mountVideoBreakdown } from './video-breakdown';
 import React,{useEffect,useMemo,useRef,useState} from 'react';import{createRoot}from'react-dom/client';import{LayoutDashboard,Lightbulb,Layers3,Sparkles,CalendarDays,ChartNoAxesCombined,Library,Search,Bell,Plus,ChevronDown,Heart,Archive,Trash2,PenLine,ArrowRight,Bookmark,ExternalLink,Copy,Check,Menu,X,Upload,Download,TrendingUp,Eye,Users,Send,Filter,Clock,FileText,Video,Link2,MoreHorizontal,Star,BarChart3}from'lucide-react';import './index.css';
 type Idea={id:string;title:string;description:string;source:string;url:string;attachment:string;platform:string;category:string;tags:string;priority:string;status:string;favorite:boolean;created:string};type Topic={id:string;title:string;platform:string;status:string;category:string;hook:string;created:string};type Content={id:string;title:string;platform:string;status:string;date:string;script:string;views:number;likes:number;comments:number;followers:number};type Breakdown={id:string;title:string;url:string;platform:string;hook:string;structure:string;lesson:string};type Data={ideas:Idea[];topics:Topic[];contents:Content[];breakdowns:Breakdown[]};const uid=()=>Math.random().toString(36).slice(2,10);const today=()=>new Date().toISOString().slice(0,10);const dateAfter=(n:number)=>{let d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
 const legacyExamples:Data={ideas:[{id:'i1',title:'早晨10分钟重启状态的5个小习惯',description:'记录真实晨间流程，用快速转场展示前后状态',source:'日常观察',url:'',attachment:'',platform:'小红书',category:'Personal Growth',tags:'晨间,习惯,成长',priority:'高',status:'待整理',favorite:true,created:today()},{id:'i2',title:'通勤包里真正用得上的美妆好物',description:'不做夸张种草，突出使用场景和实际效果',source:'粉丝评论',url:'',attachment:'',platform:'抖音',category:'Beauty',tags:'通勤,好物',priority:'中',status:'待整理',favorite:false,created:today()},{id:'i3',title:'周末独处充电日 Vlog',description:'生活方式短片，加入自然环境音和真实旁白',source:'个人灵感',url:'',attachment:'',platform:'TikTok',category:'Lifestyle',tags:'vlog,独处',priority:'高',status:'已整理',favorite:true,created:dateAfter(-1)}],topics:[{id:'t1',title:'早晨10分钟重启状态的5个小习惯',platform:'小红书',status:'准备创作',category:'Personal Growth',hook:'不是自律让我改变，而是这10分钟。',created:today()},{id:'t2',title:'平价通勤妆容：5分钟完成',platform:'抖音',status:'待评估',category:'Beauty',hook:'每天迟到的人，试试这个顺序。',created:today()}],contents:[{id:'c1',title:'周末独处充电日 Vlog',platform:'TikTok',status:'待发布',date:dateAfter(1),script:'镜头1：窗边晨光；镜头2：咖啡和读书；镜头3：散步；结尾：给自己一点空间。',views:0,likes:0,comments:0,followers:0},{id:'c2',title:'我的三款空瓶护肤品',platform:'小红书',status:'已发布',date:dateAfter(-2),script:'分享实际使用感受、肤质和适用人群。',views:12840,likes:926,comments:84,followers:56},{id:'c3',title:'下班后的治愈仪式',platform:'抖音',status:'已发布',date:dateAfter(-5),script:'用生活片段记录下班后恢复能量的方式。',views:8920,likes:643,comments:38,followers:29}],breakdowns:[{id:'b1',title:'高完播率 Vlog 的开场节奏',url:'',platform:'TikTok',hook:'前三秒抛出强烈对比',structure:'痛点 → 过程 → 转折 → 结果',lesson:'开头直接给结果画面，再解释过程'}]};const nav=[['首页',LayoutDashboard],['灵感中心',Lightbulb],['选题爆款拆解',Layers3],['AI 创作中心',Sparkles],['发布计划',CalendarDays],['数据复盘',ChartNoAxesCombined],['我的内容库',Library],['原版每日打卡',Check],['每日趋势',TrendingUp]] as const;const platforms=['小红书','抖音','TikTok','Instagram','其他'];const categories=['Lifestyle','Personal Growth','Beauty','其他'];const topicStatuses=['待评估','准备创作','创作中','已完成','暂缓'];const contentStatuses=['草稿','制作中','待发布','已发布'];const fmt=(n:number)=>n.toLocaleString('zh-CN');const emptyData: Data = { ideas: [], topics: [], contents: [], breakdowns: [] };
@@ -150,32 +151,14 @@ function DouyinReviewPanel() {
 }
 
 function VideoBreakdownTool() {
-  const frameRef = useRef<HTMLIFrameElement>(null);
-  const resizeObserver = useRef<ResizeObserver | null>(null);
+  const toolRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => () => resizeObserver.current?.disconnect(), []);
+  useEffect(() => {
+    const host = toolRef.current;
+    if (host) return mountVideoBreakdown(host);
+  }, []);
 
-  function resizeToContent() {
-    resizeObserver.current?.disconnect();
-    const frame = frameRef.current;
-    const content = frame?.contentDocument?.querySelector('.wrap');
-    if (!frame || !content) return;
-    const resize = () => {
-      const height = Math.ceil(content.getBoundingClientRect().height);
-      if (height > 0) frame.style.height = `${height}px`;
-    };
-    resizeObserver.current = new ResizeObserver(resize);
-    resizeObserver.current.observe(content);
-    resize();
-  }
-
-  return <iframe
-    ref={frameRef}
-    title="爆款视频文案拆解与分镜"
-    src="./assets/video-breakdown.html?embedded=1"
-    onLoad={resizeToContent}
-    className="block h-[900px] w-full rounded-2xl border border-slate-200"
-  />;
+  return <div ref={toolRef} className="overflow-hidden rounded-2xl border border-slate-200" />;
 }
 
 function App(){const [data,setData]=useState<Data>(read),[page,setPage]=useState(() => {

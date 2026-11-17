@@ -1,0 +1,141 @@
+<div class="wrap">
+<header class="page-head">
+<h1>视频文案拆解</h1>
+<p>把一条爆款视频的文案或字幕粘贴进来，拆出它的钩子、结构、情绪和数据表现，再生成一份换成你的主题、能直接照着拍的分镜方案。</p>
+<div class="flow" aria-hidden="true">
+<span><b>1</b>粘贴文案 + 数据</span><span class="arr">→</span>
+<span><b>2</b>拆钩子 · 结构 · 情绪</span><span class="arr">→</span>
+<span><b>3</b>生成你的拍摄方案</span>
+</div>
+</header>
+
+<div class="layout">
+<!-- ============ INPUT ============ -->
+<section class="panel input-panel" aria-label="粘贴区">
+<h2>粘贴要拆解的视频</h2>
+<p class="sub">文案在原视频的标题/简介里；没有文案时，用剪映「识别字幕」导出文本粘贴进来也可以。</p>
+
+<label class="f" for="fTitle">视频标题 <span class="opt">（选填）</span></label>
+<input type="text" id="fTitle" placeholder="例如：普通人做自媒体，千万别一上来就买设备" />
+
+<div class="grid2">
+<div>
+<label class="f" for="fPlatform">平台</label>
+<select id="fPlatform">
+<option value="抖音">抖音</option>
+<option value="TikTok">TikTok</option>
+<option value="小红书">小红书</option>
+<option value="快手">快手</option>
+<option value="B站">B站</option>
+<option value="YouTube Shorts">YouTube Shorts</option>
+<option value="Instagram Reels">Instagram Reels</option>
+</select>
+</div>
+<div>
+<label class="f" for="fTopic">你想拍的主题</label>
+<input type="text" id="fTopic" placeholder="例如：新手直播带货" />
+</div>
+</div>
+
+<label class="f" for="fScript">文案 / 口播稿 / 字幕文本</label>
+<textarea id="fScript" placeholder="把整条视频的文案或字幕粘贴到这里，一句一行效果最好……"></textarea>
+<p class="hint">拆解靠的就是这段文本：钩子、转折、干货、结尾引导都会从里面识别。</p>
+
+<div class="grid2">
+<div>
+<label class="f" for="fViews">播放量 <span class="opt">（选填）</span></label>
+<input type="text" id="fViews" inputmode="numeric" placeholder="如 107.9万" />
+</div>
+<div>
+<label class="f" for="fLikes">点赞 <span class="opt">（选填）</span></label>
+<input type="text" id="fLikes" inputmode="numeric" placeholder="如 8.6万" />
+</div>
+<div>
+<label class="f" for="fComments">评论 <span class="opt">（选填）</span></label>
+<input type="text" id="fComments" inputmode="numeric" placeholder="如 4200" />
+</div>
+<div>
+<label class="f" for="fShares">转发 / 分享 <span class="opt">（选填）</span></label>
+<input type="text" id="fShares" inputmode="numeric" placeholder="如 1.5万" />
+</div>
+</div>
+
+<button class="btn primary" id="btnAnalyze" type="button">开始拆解</button>
+<div class="err" id="formErr" role="alert"></div>
+<div class="btn-row">
+<button class="btn small" id="btnDemo" type="button">载入示例试试</button>
+<button class="btn small" id="btnClear" type="button">清空</button>
+</div>
+</section>
+
+<!-- ============ OUTPUT ============ -->
+<div>
+<section class="panel empty" id="emptyState">
+<h2>拆解结果会出现在这里</h2>
+<p class="sub">拿到一条爆款的文本，只需要三步：</p>
+<ol>
+<li><b>找文案</b> —— 打开原视频，复制标题和简介文案；口播视频在剪映里用「文本 → 识别字幕」导出。</li>
+<li><b>填数据</b> —— 播放、点赞、评论、转发填多少算多少，用来算互动率、判断它到底爆在哪一项。</li>
+<li><b>写你的主题</b> —— 拆解完会把原结构换成你的主题，生成钩子备选和逐镜头分镜表。</li>
+</ol>
+</section>
+
+<div id="results" aria-live="polite">
+<div class="verdict">
+<div class="vt" id="vTitle"></div>
+<p id="vText"></p>
+</div>
+
+<section class="panel" id="secMetrics">
+<h2>数据表现</h2>
+<p class="sub">互动率 = 互动量 ÷ 播放量，用来判断这条视频爆在点赞、评论还是转发。</p>
+<div class="metrics" id="metricGrid"></div>
+<p id="metricNote" style="margin:8px 0 0;"></p>
+</section>
+
+<section class="panel">
+<h2>开头钩子拆解</h2>
+<p class="sub">前 3 秒决定去留。第一句原文：</p>
+<p class="hook-quote" id="hookQuote"></p>
+<div class="chips" id="hookChips"></div>
+<p id="hookNote" style="margin:12px 0 0;"></p>
+</section>
+
+<section class="panel">
+<h2>内容结构</h2>
+<p class="sub" id="structSub"></p>
+<div class="segbar" id="segBar"></div>
+<div class="seg-list" id="segList"></div>
+</section>
+
+<section class="panel">
+<h2>它为什么能爆</h2>
+<ul class="why-list" id="whyList"></ul>
+<h2 style="margin-top:20px;">你可以优化的点</h2>
+<ul class="why-list" id="fixList"></ul>
+</section>
+
+<section class="panel">
+<h2>照着拍：你的版本</h2>
+<p class="sub" id="planSub"></p>
+<div id="hookAlts"></div>
+<h2 style="margin-top:20px;">分镜表</h2>
+<p class="sub">时长按中文口播约每秒 4 个字估算，台词是原结构换成你的主题后的参考稿，可直接改词。</p>
+<div class="shot-head"><span>镜头</span><span>时间</span><span>景别</span><span>台词 / 画面</span></div>
+<div id="shotList"></div>
+<h2 style="margin-top:22px;">拍摄清单</h2>
+<ul class="check" id="checkList"></ul>
+<h2 style="margin-top:22px;">发布建议</h2>
+<dl class="kv" id="pubList"></dl>
+<div class="btn-row no-print">
+<button class="btn" id="btnCopy" type="button">复制整份拆解 + 方案</button>
+<button class="btn" id="btnDownload" type="button">下载为 Markdown</button>
+</div>
+</section>
+</div>
+</div>
+</div>
+
+<p class="foot">拆解基于你粘贴的文本与数据在本页内完成，刷新页面不会保留内容。</p>
+</div>
+<div class="toast" id="toast">已复制</div>
