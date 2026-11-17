@@ -130,6 +130,7 @@ return picked;
 
 /* ---------- demo ---------- */
 $("btnDemo").addEventListener("click", function () {
+resetLinkSummary();
 $("fUrl").value = "";
 $("fTitle").value = "普通人做自媒体，千万别一上来就买设备";
 $("fPlatform").value = "抖音";
@@ -150,6 +151,10 @@ $("formErr").classList.remove("show");
 toast("示例已载入，点「开始拆解」");
 });
 $("btnClear").addEventListener("click", function () {
+resetLinkSummary();
+$("results").classList.remove("show");
+$("emptyState").style.display = "";
+lastReference = lastReport = "";
 ["fTitle", "fUrl", "fTopic", "fScript", "fViews", "fLikes", "fComments", "fShares"].forEach(function (id) { $(id).value = "";});
 $("formErr").classList.remove("show");
 });
@@ -157,6 +162,100 @@ $("formErr").classList.remove("show");
 /* ---------- analyze ---------- */
 var lastReport = "";
 var lastReference = "";
+var linkReference = "";
+var linkRequest = 0;
+
+function resetLinkSummary() {
+  linkRequest += 1;
+  linkReference = "";
+  $("linkSummary").hidden = true;
+  $("btnAnalyze").disabled = false;
+  $("btnAnalyze").textContent = "开始拆解";
+}
+
+function getYouTubeId(value) {
+  const shareUrl = value.match(/https?:\/\/[^\s，。！？、]+/i)?.[0];
+  if (!shareUrl) return "";
+  try {
+    const url = new URL(shareUrl);
+    const host = url.hostname.toLowerCase();
+    const id = host === "youtu.be" ? url.pathname.split("/")[1] :
+      ["youtube.com", "www.youtube.com", "m.youtube.com"].includes(host) ?
+        (url.pathname === "/watch" ? url.searchParams.get("v") :
+          url.pathname.match(/^\/(?:shorts|live|embed)\/([^/]+)/)?.[1]) : "";
+    return id && /^[\w-]{11}$/.test(id) ? id : "";
+  } catch {
+    return "";
+  }
+}
+
+async function analyzePublicLink(value) {
+  const error = $("formErr");
+  const id = getYouTubeId(value);
+  if (!id) {
+    error.textContent = "这个平台还不能从链接读取正文。链接会保留，可以粘贴字幕或口播继续拆解。";
+    error.classList.add("show");
+    return;
+  }
+
+  const request = ++linkRequest;
+  const button = $("btnAnalyze");
+  button.disabled = true;
+  button.textContent = "正在读取公开标题…";
+  error.classList.remove("show");
+  const source = "https://www.youtube.com/watch?v=" + id;
+  try {
+    const endpoint = new URL("https://www.youtube.com/oembed");
+    endpoint.search = new URLSearchParams({ url: source, format: "json" });
+    const result = await fetch(endpoint, {
+      credentials: "omit", signal: AbortSignal.timeout(10000)
+    });
+    if (!result.ok) throw Error("YouTube title unavailable");
+    const data = await result.json();
+    if (typeof data.title !== "string" || !data.title.trim()) throw Error("Missing title");
+    if (request !== linkRequest) return;
+
+    const title = data.title.trim();
+    const author = typeof data.author_name === "string" ? data.author_name : "";
+    const hooks = detectHook(title).map(hook => hook.t);
+    const topic = $("fTopic").value.trim();
+    const containsNumber = /\d/.test(title);
+    const observation = hooks.length
+      ? "标题里的吸引点：" + hooks.join("、") + "。"
+      : containsNumber ? "标题里的数字让观众提前知道内容的范围或数量。"
+      : "可以从标题拆出它承诺回答的问题，再看这个问题对谁有用。";
+    const adaptation = (topic ? "用在「" + topic + "」：" : "借鉴方法：") + (containsNumber
+      ? "把你能实际讲清的经验或步骤写进标题，开场先展示其中一个结果。"
+      : "用自己的真实场景替换原标题中的场景，再用一句话说清观众看完会得到什么。");
+
+    $("linkTitle").textContent = title;
+    $("linkAuthor").textContent = author ? "YouTube · " + author : "YouTube";
+    $("linkObservation").textContent = observation;
+    $("linkAdaptation").textContent = adaptation;
+    $("linkSummary").hidden = false;
+    linkReference = [
+      "资料范围：只读取了公开视频标题和作者。没有字幕、画面、互动数据。",
+      "参考链接：" + source,
+      "参考标题：" + title,
+      observation,
+      adaptation
+    ].join("\n");
+  } catch {
+    if (request !== linkRequest) return;
+    error.textContent = "YouTube 没有返回标题。请确认视频公开且可嵌入，或粘贴字幕继续。";
+    error.classList.add("show");
+  } finally {
+    if (request === linkRequest) {
+      button.disabled = false;
+      button.textContent = "开始拆解";
+    }
+  }
+}
+
+$("fUrl").addEventListener("input", resetLinkSummary);
+$("btnUseLink").addEventListener("click", () => {
+  if (linkReference) onReference(linkReference);
+});
 $("btnAnalyze").addEventListener("click", function () {
 var title = $("fTitle").value.trim();
 var sourceUrl = $("fUrl").value.trim();
@@ -164,12 +263,19 @@ var platform = $("fPlatform").value;
 var topic = $("fTopic").value.trim();
 var script = $("fScript").value.trim();
 var err = $("formErr");
+if (!script && sourceUrl) {
+  resetLinkSummary();
+  $("results").classList.remove("show");
+  void analyzePublicLink(sourceUrl);
+  return;
+}
 if (!script) {
 err.textContent = "请粘贴视频字幕、口播或镜头笔记。链接用来标记来源。";
 err.classList.add("show");
 $("fScript").focus();
 return;
 }
+resetLinkSummary();
 err.classList.remove("show");
 
 var sents = splitSentences(script);
