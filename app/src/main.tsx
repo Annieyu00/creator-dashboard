@@ -290,17 +290,37 @@ const ai = <>
   </div>
   <section className="panel mt-5 p-6" aria-labelledby="script-references">
     <h2 id="script-references" className="h2 mb-4">拍法参考</h2>
-    <div className="grid gap-3 md:grid-cols-2">
-      <a className="block rounded-xl border border-slate-200 p-4 hover:border-brand"
-        href="https://www.youtube.com/watch?v=G95UnUuBaTA" target="_blank" rel="noopener noreferrer">
-        <span className="flex items-center gap-2 font-semibold"><Video size={16}/>上班日常 Vlog <ExternalLink size={14}/></span>
-        <span className="muted mt-2 block">Rebekah Joy · 参考怎么用出门、上班和下班三个场景串起一天。</span>
-      </a>
-      <a className="block rounded-xl border border-slate-200 p-4 hover:border-brand"
-        href="https://www.youtube.com/watch?v=ZeLnr3AkRLg" target="_blank" rel="noopener noreferrer">
-        <span className="flex items-center gap-2 font-semibold"><Video size={16}/>带情绪主线的上班 Vlog <ExternalLink size={14}/></span>
-        <span className="muted mt-2 block">参考怎么把「提不起劲」这样的感受放进上班日常。</span>
-      </a>
+    <div className="grid gap-4 md:grid-cols-2">
+      <article className="rounded-xl border border-slate-200 p-4">
+        <h3 className="font-semibold">上班日常 Vlog</h3>
+        <a className="mt-2 inline-flex items-center gap-2 text-sm text-brand"
+          href="https://www.youtube.com/watch?v=G95UnUuBaTA" target="_blank" rel="noopener noreferrer">
+          <Video size={16}/>观看 Rebekah Joy 的参考视频 <ExternalLink size={14}/>
+        </a>
+        <h4 className="mt-4 text-sm font-semibold">文字示范 · 回美国上班第一天</h4>
+        <ol className="mt-3 space-y-3 text-sm leading-relaxed">
+          <li><strong>0–3 秒 · 开场</strong><br/>镜头：特写拍手拿钥匙，切到门关上的瞬间。<br/>口播：「回美国上班第一天，我想看看自己多久能找回上班的节奏。」</li>
+          <li><strong>3–12 秒 · 通勤</strong><br/>镜头：拍走出家门的脚步，再接等车时的街景。<br/>口播：「先从最熟悉的一件事开始，走一遍平时上班的路。」</li>
+          <li><strong>12–30 秒 · 工作日</strong><br/>镜头：拍打开记事本、写下第一件事。<br/>口播：「今天我先做的是（换成你的真实任务）。这个动作做完，我才有了回到工作日的感觉。」</li>
+          <li><strong>30–45 秒 · 下班收尾</strong><br/>镜头：拍回到家把钥匙放回桌上，呼应开场。<br/>口播：「第一天就这么过完了。你长假回来，最难找回的是哪个节奏？」</li>
+        </ol>
+        <p className="muted mt-3">转场可以用关门声，把出门和回家两个镜头接起来。</p>
+      </article>
+      <article className="rounded-xl border border-slate-200 p-4">
+        <h3 className="font-semibold">带情绪主线的上班 Vlog</h3>
+        <a className="mt-2 inline-flex items-center gap-2 text-sm text-brand"
+          href="https://www.youtube.com/watch?v=ZeLnr3AkRLg" target="_blank" rel="noopener noreferrer">
+          <Video size={16}/>观看参考视频 <ExternalLink size={14}/>
+        </a>
+        <h4 className="mt-4 text-sm font-semibold">文字示范 · 上班提不起劲的一天</h4>
+        <ol className="mt-3 space-y-3 text-sm leading-relaxed">
+          <li><strong>0–3 秒 · 开场</strong><br/>镜头：拍你坐在门边穿鞋，停一下再站起来。<br/>口播：「今天坐在门口，鞋都穿好了，我还是不想出门。」</li>
+          <li><strong>3–12 秒 · 交代状态</strong><br/>镜头：拍等车时的侧脸，留一秒环境声。<br/>口播：「路还是那条路，就是今天人到了，状态还没到。」</li>
+          <li><strong>12–30 秒 · 一个小变化</strong><br/>镜头：拍在纸上圈出一件小事，做完后划掉。<br/>口播：「我就挑了一件能做完的小事。写下来，做完，划掉。然后再看下一件。」</li>
+          <li><strong>30–45 秒 · 回到感受</strong><br/>镜头：拍下班路上的第一眼街景。<br/>口播：「今天也没突然变得很有干劲，但我把这一天过完了。你没状态的时候，会先做哪件小事？」</li>
+        </ol>
+        <p className="muted mt-3">选一个你当天真的做过的小动作来拍，收尾说当时的真实感受。</p>
+      </article>
     </div>
   </section>
 </>;
