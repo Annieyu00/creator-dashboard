@@ -222,14 +222,18 @@ function saveScriptDraft() {
 }
 
 useEffect(() => {
-  if (page !== 'AI 创作中心' || window.location.hash !== '#script-references') return;
-  document.getElementById('script-references')?.scrollIntoView();
+  const section = window.location.hash.slice(1);
+  if (page !== 'AI 创作中心' || !['script-references', 'opinion-vlog'].includes(section)) return;
+  document.getElementById(section)?.scrollIntoView();
 }, [page]);
 
 const ai = <>
   <div className="flex flex-wrap items-start justify-between gap-2">
     {heading('AI 创作中心', '把零散想法整理成一条能直接拍的短视频。')}
-    <a className="btn secondary mb-4" href="#script-references"><FileText size={17}/>看文字版拍法</a>
+    <div className="mb-4 flex flex-wrap gap-2">
+      <a className="btn secondary" href="#script-references"><FileText size={17}/>看文字版拍法</a>
+      <a className="btn secondary" href="#opinion-vlog">观点型 Vlog 方法</a>
+    </div>
   </div>
   <div className="grid gap-5 lg:grid-cols-5">
     <div className="panel space-y-4 p-6 lg:col-span-2">
@@ -330,6 +334,32 @@ const ai = <>
         <p className="muted mt-3">选一个你当天真的做过的小动作来拍，收尾说当时的真实感受。</p>
       </article>
     </div>
+    <article id="opinion-vlog" className="mt-5 scroll-mt-20 rounded-xl border border-slate-200 p-5" aria-labelledby="opinion-vlog-title">
+      <h3 id="opinion-vlog-title" className="h2">观点型 Vlog</h3>
+      <p className="muted mt-2">先表明你怎么看，再用一件亲历的小事，让观众看到你为什么这么想。</p>
+      <div className="mt-4 grid gap-5 lg:grid-cols-2">
+        <div>
+          <h4 className="font-semibold">从选题到拍摄的四步</h4>
+          <ol className="mt-3 list-decimal space-y-3 pl-5 text-sm leading-relaxed">
+            <li><strong>写一句观点。</strong>把「回美国上班第一天」改成一句可以讨论的话，比如「刚回去上班，我会先把节奏找回来，再谈效率」。</li>
+            <li><strong>挑一件能说明观点的真事。</strong>写下当时遇到什么、你做了什么、结果怎样。选一个最能说明你为什么这么想的细节。</li>
+            <li><strong>给每段口播配一个画面。</strong>观点用对镜讲，经历用动作说明。比如拍你翻开工作清单、圈出一件优先任务，再切回正脸讲这对你有什么用。</li>
+            <li><strong>把结尾说回自己的经验。</strong>用「对我来说」收住结论，再问观众一个具体问题。比如「你放完假第一天，会先清消息还是先做一件手头的事？」</li>
+          </ol>
+          <p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm leading-relaxed"><strong>写进「我的思路」</strong><br/>我的观点是＿＿。我会这么想，是因为有一次＿＿。当时我做了＿＿，结果＿＿。我能拍＿＿。最后我想问观众＿＿。</p>
+        </div>
+        <div>
+          <h4 className="font-semibold">45 秒示范 · 回美国上班，先找节奏还是先拼效率？</h4>
+          <p className="muted mt-2">括号里的经历换成当天真正发生的事。</p>
+          <ol className="mt-3 space-y-3 text-sm leading-relaxed">
+            <li><strong>0–5 秒 · 给观点</strong><br/>镜头：拿着包站在门口，正脸开场。<br/>口播：「刚回美国上班第一天，我会先找回节奏，再谈效率。」</li>
+            <li><strong>5–17 秒 · 讲一件事</strong><br/>镜头：拍通勤途中，再切到翻开工作清单。<br/>口播：「那天我一到（你所在的地方），手上就有（两件真实的事）。我先做了（你实际选的那件）。」</li>
+            <li><strong>17–34 秒 · 说为什么</strong><br/>镜头：用笔圈出那件事，拍一个能代表做完的动作。<br/>口播：「做完之后，（说一个真实变化）。对我来说，先有一件事能收尾，我才知道接下来怎么排。」</li>
+            <li><strong>34–45 秒 · 留一个问题</strong><br/>镜头：下班路上对镜讲，最后留一秒街景。<br/>口播：「你长假回来第一天，会先把积下来的消息清一遍，还是先挑一件事做完？」</li>
+          </ol>
+        </div>
+      </div>
+    </article>
   </section>
 </>;
 const schedule=<>{heading('发布计划','统一安排多平台内容，追踪每条作品的发布状态。','安排新内容',()=>open('content'))}<div className="grid md:grid-cols-4 gap-3 mb-5">{contentStatuses.map(s=><div className="panel p-4" key={s}><div className="muted">{s}</div><div className="text-2xl font-bold mt-2">{data.contents.filter(c=>c.status===s).length}</div></div>)}</div><div className="panel overflow-x-auto"><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500"><tr>{['内容','平台','计划日期','状态','操作'].map(t=><th key={t} className="p-4">{t}</th>)}</tr></thead><tbody>{[...data.contents].sort((a,b)=>a.date.localeCompare(b.date)).map(c=><tr className="border-t border-slate-100" key={c.id}><td className="p-4 font-medium">{c.title}</td><td className="p-4">{c.platform}</td><td className="p-4"><input type="date" className="field !p-2" value={c.date} onChange={e=>update('contents',c.id,{date:e.target.value})}/></td><td className="p-4"><select className="field !p-2" value={c.status} onChange={e=>update('contents',c.id,{status:e.target.value})}>{contentStatuses.map(s=><option key={s}>{s}</option>)}</select></td><td className="p-4"><button className="text-brand mr-4" onClick={()=>open('content',c)}>编辑</button><button className="text-rose-400" onClick={()=>remove('contents',c.id)}>删除</button></td></tr>)}</tbody></table></div></>;
