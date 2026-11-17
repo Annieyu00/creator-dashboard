@@ -201,12 +201,67 @@ useEffect(() => () => {
   scriptRunning.current = false;
 }, []);
 
-const generate = () => {
+const [geminiEndpoint, setGeminiEndpoint] = useState(() => {
+  try { return localStorage.getItem('xx-gemini-endpoint') ?? ''; } catch { return ''; }
+});
+const [geminiCode, setGeminiCode] = useState('');
+
+const generate = async () => {
   const topic = aiTitle.trim();
   const detailed = page === '选题爆款拆解';
   const details = scriptDetails.trim();
   if ((!topic && !details) || scriptRunning.current) return;
   setScriptError('');
+  const payload = {
+    topic, platform: aiPlatform, tone: aiTone, details, detailed,
+    topicHook: detailed && selectedTopic?.title === topic ? selectedTopic.hook : '',
+    reference: detailed ? videoReference : '',
+  };
+
+  if (geminiEndpoint.trim()) {
+    let endpoint;
+    try {
+      endpoint = new URL(geminiEndpoint.trim());
+      if (endpoint.protocol !== 'https:' || !endpoint.hostname.endsWith('.workers.dev')
+        || endpoint.username || endpoint.password || endpoint.search || endpoint.hash
+        || !['/', '/generate'].includes(endpoint.pathname)) throw new Error();
+      endpoint.pathname = '/generate';
+    } catch {
+      setScriptError('请填写完整的 HTTPS Cloudflare Workers 地址。');
+      return;
+    }
+    if (geminiCode.trim().length < 24) {
+      setScriptError('请填写你在 Cloudflare 设置的访问码（至少 24 个字符）。');
+      return;
+    }
+
+    scriptRunning.current = true;
+    setScriptProgress('Gemini 正在写脚本…');
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        redirect: 'error',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + geminiCode.trim() },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(60000),
+      });
+      const data = await response.json();
+      if (!response.ok || typeof data.text !== 'string' || !data.text.trim()) {
+        throw new Error(data.error || 'Gemini 暂时没有生成脚本。');
+      }
+      setAiResult(data.text);
+      try { localStorage.setItem('xx-gemini-endpoint', endpoint.origin); } catch {}
+    } catch (error) {
+      setScriptError(error instanceof TypeError
+        ? '无法连接 Gemini 后端，请检查地址和 Worker 部署状态。'
+        : error instanceof Error ? error.message : '生成失败，请重试。');
+    } finally {
+      scriptRunning.current = false;
+      setScriptProgress('');
+    }
+    return;
+  }
+
   if (!('gpu' in navigator)) {
     setScriptError('当前浏览器无法使用 WebGPU。请在支持 WebGPU 的电脑 Chrome 中打开，确认已启用图形加速。');
     return;
@@ -238,11 +293,7 @@ const generate = () => {
       };
       scriptWorker.current = worker;
     }
-    scriptWorker.current.postMessage({
-      topic, platform: aiPlatform, tone: aiTone, details, detailed,
-      topicHook: detailed && selectedTopic?.title === topic ? selectedTopic.hook : '',
-      reference: detailed ? videoReference : '',
-    });
+    scriptWorker.current.postMessage(payload);
   } catch {
     stop('无法启动 AI。请刷新网页后再试。');
   }
@@ -311,7 +362,24 @@ const scriptEditor = <div className="grid gap-5 lg:grid-cols-5">
         disabled={(!aiTitle.trim() && !scriptDetails.trim()) || !!scriptProgress} onClick={generate}>
         <Sparkles size={17}/>{scriptProgress ? '生成中…' : page === '选题爆款拆解' ? 'AI 生成详细脚本' : 'AI 整理成完整脚本'}
       </button>
-      <p className="text-xs leading-relaxed text-slate-500">首次使用需要联网下载模型。请用支持 WebGPU 的电脑浏览器。</p>
+      <details className="rounded-lg border border-slate-200 p-3" open={geminiEndpoint.trim() ? true : undefined}>
+        <summary className="cursor-pointer text-sm font-semibold">接入 Gemini 免费层</summary>
+        <label className="mt-3 block text-sm">Cloudflare Workers 地址
+          <input className="field mt-1" type="url" placeholder="https://你的服务名.workers.dev"
+            value={geminiEndpoint} disabled={!!scriptProgress} onChange={e => {
+              setGeminiEndpoint(e.target.value);
+              if (!e.target.value.trim()) {
+                try { localStorage.removeItem('xx-gemini-endpoint'); } catch {}
+              }
+            }}/>
+        </label>
+        <label className="mt-3 block text-sm">Worker 访问码
+          <input className="field mt-1" type="password" autoComplete="off" placeholder="在 Cloudflare 设置的 SCRIPT_ACCESS_TOKEN"
+            value={geminiCode} disabled={!!scriptProgress} onChange={e => setGeminiCode(e.target.value)}/>
+        </label>
+        <p className="muted mt-2">Gemini 密钥只填在 Cloudflare。生成时，选题、思路和参考拆解会发送给 Gemini。</p>
+      </details>
+      <p className="text-xs leading-relaxed text-slate-500">{geminiEndpoint.trim() ? '生成模型：Gemini' : '生成模型：浏览器本地模型。首次使用需要下载模型和 WebGPU。'}</p>
       {scriptProgress && <p role="status" className="text-sm text-slate-600">{scriptProgress}</p>}
       {scriptError && <p role="alert" className="text-sm text-rose-700">{scriptError}</p>}
     </div>
