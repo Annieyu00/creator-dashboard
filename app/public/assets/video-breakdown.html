@@ -10,6 +10,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet" />
 <style>
+html[data-embedded] .standalone-only { display: none; }
+html[data-embedded] .wrap { padding: 20px 14px 24px; }
+html[data-embedded] .input-panel { position: static; }
+@media (max-width: 1080px) { html[data-embedded] .layout { grid-template-columns: minmax(0, 1fr); } }
 button, [role="button"], select, summary, input:not([type="checkbox"], [type="radio"]) { min-height: 2.25rem;}
 * { box-sizing: border-box;}
 :root {
@@ -215,7 +219,7 @@ body { background: #fff;}
 <body>
 <div class="wrap">
 <header class="page-head">
-<a class="no-print" href="../?view=breakdown" style="display:inline-block;margin-bottom:12px;color:var(--accent-deep)">← 返回创作工作台</a>
+<a class="no-print standalone-only" href="../?view=breakdown" style="display:inline-block;margin-bottom:12px;color:var(--accent-deep)">← 返回创作工作台</a>
 <h1><span class="hot">爆款</span>拆解</h1>
 <p>把一条爆款视频的文案或字幕粘贴进来，拆出它的钩子、结构、情绪和数据表现，再生成一份换成你的主题、能直接照着拍的分镜方案。</p>
 <div class="flow" aria-hidden="true">
@@ -359,6 +363,7 @@ body { background: #fff;}
 <script>
 (function () {
 "use strict";
+if (new URLSearchParams(window.location.search).get("embedded") === "1") document.documentElement.setAttribute("data-embedded", "");
 var $ = function (id) { return document.getElementById(id);};
 
 /* ---------- helpers ---------- */
