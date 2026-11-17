@@ -37,6 +37,9 @@
 </div>
 </div>
 
+<label class="f" for="fUrl">参考视频链接 <span class="opt">选填</span></label>
+<input type="url" id="fUrl" placeholder="粘贴抖音、小红书或其他公开视频链接" style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit" />
+<p class="hint">链接用来标记来源。请再粘贴字幕、口播或镜头笔记；有播放和互动数也可以填上。</p>
 <label class="f" for="fScript">文案 / 口播稿 / 字幕文本</label>
 <textarea id="fScript" placeholder="把整条视频的文案或字幕粘贴到这里，一句一行效果最好……"></textarea>
 <p class="hint">拆解靠的就是这段文本：钩子、转折、干货、结尾引导都会从里面识别。</p>
@@ -128,6 +131,7 @@
 <h2 style="margin-top:22px;">发布建议</h2>
 <dl class="kv" id="pubList"></dl>
 <div class="btn-row no-print">
+<button class="btn" id="btnUseReference" type="button">用这条拆解写详细脚本</button>
 <button class="btn" id="btnCopy" type="button">复制整份拆解 + 方案</button>
 <button class="btn" id="btnDownload" type="button">下载为 Markdown</button>
 </div>

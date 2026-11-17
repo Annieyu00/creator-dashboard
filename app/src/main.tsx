@@ -1,5 +1,5 @@
 import { mountVideoBreakdown } from './video-breakdown';
-import React,{useEffect,useMemo,useRef,useState} from 'react';import{createRoot}from'react-dom/client';import{LayoutDashboard,Lightbulb,Layers3,Sparkles,CalendarDays,ChartNoAxesCombined,Library,Search,Bell,Plus,ChevronDown,Heart,Archive,Trash2,PenLine,ArrowRight,Bookmark,ExternalLink,Copy,Check,Menu,X,Upload,Download,TrendingUp,Eye,Users,Send,Filter,Clock,FileText,Video,Link2,MoreHorizontal,Star,BarChart3}from'lucide-react';import './index.css';
+import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';import{createRoot}from'react-dom/client';import{LayoutDashboard,Lightbulb,Layers3,Sparkles,CalendarDays,ChartNoAxesCombined,Library,Search,Bell,Plus,ChevronDown,Heart,Archive,Trash2,PenLine,ArrowRight,Bookmark,ExternalLink,Copy,Check,Menu,X,Upload,Download,TrendingUp,Eye,Users,Send,Filter,Clock,FileText,Video,Link2,MoreHorizontal,Star,BarChart3}from'lucide-react';import './index.css';
 type Idea={id:string;title:string;description:string;source:string;url:string;attachment:string;platform:string;category:string;tags:string;priority:string;status:string;favorite:boolean;created:string};type Topic={id:string;title:string;platform:string;status:string;category:string;hook:string;created:string};type Content={id:string;title:string;platform:string;status:string;date:string;script:string;views:number;likes:number;comments:number;followers:number};type Breakdown={id:string;title:string;url:string;platform:string;hook:string;structure:string;lesson:string};type Data={ideas:Idea[];topics:Topic[];contents:Content[];breakdowns:Breakdown[]};const uid=()=>Math.random().toString(36).slice(2,10);const today=()=>new Date().toISOString().slice(0,10);const dateAfter=(n:number)=>{let d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
 const legacyExamples:Data={ideas:[{id:'i1',title:'早晨10分钟重启状态的5个小习惯',description:'记录真实晨间流程，用快速转场展示前后状态',source:'日常观察',url:'',attachment:'',platform:'小红书',category:'Personal Growth',tags:'晨间,习惯,成长',priority:'高',status:'待整理',favorite:true,created:today()},{id:'i2',title:'通勤包里真正用得上的美妆好物',description:'不做夸张种草，突出使用场景和实际效果',source:'粉丝评论',url:'',attachment:'',platform:'抖音',category:'Beauty',tags:'通勤,好物',priority:'中',status:'待整理',favorite:false,created:today()},{id:'i3',title:'周末独处充电日 Vlog',description:'生活方式短片，加入自然环境音和真实旁白',source:'个人灵感',url:'',attachment:'',platform:'TikTok',category:'Lifestyle',tags:'vlog,独处',priority:'高',status:'已整理',favorite:true,created:dateAfter(-1)}],topics:[{id:'t1',title:'早晨10分钟重启状态的5个小习惯',platform:'小红书',status:'准备创作',category:'Personal Growth',hook:'不是自律让我改变，而是这10分钟。',created:today()},{id:'t2',title:'平价通勤妆容：5分钟完成',platform:'抖音',status:'待评估',category:'Beauty',hook:'每天迟到的人，试试这个顺序。',created:today()}],contents:[{id:'c1',title:'周末独处充电日 Vlog',platform:'TikTok',status:'待发布',date:dateAfter(1),script:'镜头1：窗边晨光；镜头2：咖啡和读书；镜头3：散步；结尾：给自己一点空间。',views:0,likes:0,comments:0,followers:0},{id:'c2',title:'我的三款空瓶护肤品',platform:'小红书',status:'已发布',date:dateAfter(-2),script:'分享实际使用感受、肤质和适用人群。',views:12840,likes:926,comments:84,followers:56},{id:'c3',title:'下班后的治愈仪式',platform:'抖音',status:'已发布',date:dateAfter(-5),script:'用生活片段记录下班后恢复能量的方式。',views:8920,likes:643,comments:38,followers:29}],breakdowns:[{id:'b1',title:'高完播率 Vlog 的开场节奏',url:'',platform:'TikTok',hook:'前三秒抛出强烈对比',structure:'痛点 → 过程 → 转折 → 结果',lesson:'开头直接给结果画面，再解释过程'}]};const nav=[['首页',LayoutDashboard],['灵感中心',Lightbulb],['选题爆款拆解',Layers3],['AI 创作中心',Sparkles],['发布计划',CalendarDays],['数据复盘',ChartNoAxesCombined],['我的内容库',Library],['原版每日打卡',Check],['每日趋势',TrendingUp]] as const;const platforms=['小红书','抖音','TikTok','Instagram','其他'];const categories=['Lifestyle','Personal Growth','Beauty','其他'];const topicStatuses=['待评估','准备创作','创作中','已完成','暂缓'];const contentStatuses=['草稿','制作中','待发布','已发布'];const fmt=(n:number)=>n.toLocaleString('zh-CN');const emptyData: Data = { ideas: [], topics: [], contents: [], breakdowns: [] };
 
@@ -150,13 +150,21 @@ function DouyinReviewPanel() {
   </section>;
 }
 
-function VideoBreakdownTool() {
+function VideoBreakdownTool({ topic, onReference }: {
+  topic: string;
+  onReference: (reference: string) => void;
+}) {
   const toolRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const host = toolRef.current;
-    if (host) return mountVideoBreakdown(host);
-  }, []);
+    if (host) return mountVideoBreakdown(host, onReference);
+  }, [onReference]);
+
+  useEffect(() => {
+    const field = toolRef.current?.shadowRoot?.getElementById('fTopic') as HTMLInputElement | null;
+    if (field) field.value = topic;
+  }, [topic, onReference]);
 
   return <div ref={toolRef} className="overflow-hidden rounded-2xl border border-slate-200" />;
 }
@@ -166,15 +174,21 @@ function App(){const [data,setData]=useState<Data>(read),[page,setPage]=useState
   if (view === 'script') return 'AI 创作中心';
   if (view === 'breakdown') return '选题爆款拆解';
   return '首页';
-}),[search,setSearch]=useState(''),[modal,setModal]=useState(''),[editing,setEditing]=useState(''),[toast,setToast]=useState(''),[mobile,setMobile]=useState(false),[tab,setTab]=useState('爆款拆解'),[board,setBoard]=useState(false),[filter,setFilter]=useState('全部'),[sort,setSort]=useState('最新'),[selected,setSelected]=useState<string[]>([]),[draft,setDraft]=useState(''),[aiTitle,setAiTitle]=useState(''),[aiPlatform,setAiPlatform]=useState('抖音'),[aiTone,setAiTone]=useState('真实自然'),[aiResult,setAiResult]=useState(''),[newItem,setNewItem]=useState<Record<string,string>>({});useEffect(()=>{localStorage.setItem('xx-creator-v1',JSON.stringify(data))},[data]);const notify=(s:string)=>{setToast(s);setTimeout(()=>setToast(''),2600)};const open=(type:string,item?:Record<string,any>)=>{setModal(type);setEditing(item?.id||'');setNewItem(item?Object.fromEntries(Object.entries(item).map(([k,v])=>[k,String(v)])):{platform:'小红书',category:'Lifestyle',priority:'中',status:type==='topic'?'待评估':type==='content'?'草稿':'待整理',date:today()})};const close=()=>{setModal('');setEditing('')};const saveItem=()=>{if(!newItem.title?.trim()){notify('请填写标题');return}const key=modal==='idea'?'ideas':modal==='topic'?'topics':modal==='content'?'contents':'breakdowns';const item:any={...newItem,id:editing||uid(),created:newItem.created||today()};if(key==='ideas'){item.favorite=newItem.favorite==='true';item.source??='';item.url??='';item.description??='';item.tags??='';item.attachment??=''}if(key==='contents'){item.views=Number(newItem.views||0);item.likes=Number(newItem.likes||0);item.comments=Number(newItem.comments||0);item.followers=Number(newItem.followers||0);item.script??=''}setData(d=>({...d,[key]:editing?(d[key] as any[]).map(x=>x.id===editing?item:x):[item,...d[key]]}));close();notify(editing?'已保存修改':'创建成功')};const remove=(key:keyof Data,id:string)=>{if(!confirm('确定删除这条记录吗？'))return;setData(d=>({...d,[key]:d[key].filter(x=>x.id!==id)}));notify('已删除')};const update=(key:keyof Data,id:string,changes:Record<string,any>)=>setData(d=>({...d,[key]:d[key].map(x=>x.id===id?{...x,...changes}:x)}));const convert=(idea:Idea)=>{setData(d=>({...d,topics:[{id:uid(),title:idea.title,platform:idea.platform,category:idea.category,status:'待评估',hook:idea.description,created:today()},...d.topics],ideas:d.ideas.map(i=>i.id===idea.id?{...i,status:'已转选题'}:i)}));notify('已转入我的选题')};const start=(topic:Topic)=>{setData(d=>({...d,contents:[{id:uid(),title:topic.title,platform:topic.platform,status:'草稿',date:today(),script:topic.hook,views:0,likes:0,comments:0,followers:0},...d.contents],topics:d.topics.map(t=>t.id===topic.id?{...t,status:'创作中'}:t)}));setPage('AI 创作中心');setAiTitle(topic.title);notify('已创建创作草稿')};const published=data.contents.filter(c=>c.status==='已发布'),upcoming=data.contents.filter(c=>c.status==='待发布'),totals={views:published.reduce((a,c)=>a+c.views,0),engagement:published.reduce((a,c)=>a+c.likes+c.comments,0),followers:published.reduce((a,c)=>a+c.followers,0),count:published.length};const field=(key:string,label:string,kind='text',options?:string[])=> <label className="block"><span className="text-xs font-semibold text-slate-600">{label}</span>{options?<select className="field mt-1" value={newItem[key]||options[0]} onChange={e=>setNewItem(p=>({...p,[key]:e.target.value}))}>{options.map(o=><option key={o}>{o}</option>)}</select>:kind==='textarea'?<textarea rows={3} className="field mt-1" value={newItem[key]||''} onChange={e=>setNewItem(p=>({...p,[key]:e.target.value}))}/>:<input type={kind} className="field mt-1" value={newItem[key]||''} onChange={e=>setNewItem(p=>({...p,[key]:e.target.value}))}/>}</label>;const heading=(title:string,sub:string,button?:string,action?:()=>void)=><div className="flex flex-wrap justify-between items-start gap-3 mb-6"><div><h1 className="text-2xl font-bold">{title}</h1><p className="muted mt-1">{sub}</p></div>{button&&<button onClick={action} className="btn primary"><Plus size={17}/>{button}</button>}</div>;const tag=(s:string)=><span className={'pill '+(s==='高'||s==='已发布'||s==='已完成'?'bg-emerald-50 text-emerald-700':s==='待发布'||s==='准备创作'?'bg-amber-50 text-amber-700':'bg-slate-100 text-slate-600')}>{s}</span>;const empty=(s:string)=><div className="text-center py-14 text-slate-400"><Lightbulb className="mx-auto mb-3" size={28}/>{s}</div>;
+}),[search,setSearch]=useState(''),[modal,setModal]=useState(''),[editing,setEditing]=useState(''),[toast,setToast]=useState(''),[mobile,setMobile]=useState(false),[board,setBoard]=useState(false),[filter,setFilter]=useState('全部'),[sort,setSort]=useState('最新'),[selected,setSelected]=useState<string[]>([]),[draft,setDraft]=useState(''),[aiTitle,setAiTitle]=useState(''),[aiPlatform,setAiPlatform]=useState('抖音'),[aiTone,setAiTone]=useState('真实自然'),[aiResult,setAiResult]=useState(''),[newItem,setNewItem]=useState<Record<string,string>>({});useEffect(()=>{localStorage.setItem('xx-creator-v1',JSON.stringify(data))},[data]);const notify=(s:string)=>{setToast(s);setTimeout(()=>setToast(''),2600)};const open=(type:string,item?:Record<string,any>)=>{setModal(type);setEditing(item?.id||'');setNewItem(item?Object.fromEntries(Object.entries(item).map(([k,v])=>[k,String(v)])):{platform:'小红书',category:'Lifestyle',priority:'中',status:type==='topic'?'待评估':type==='content'?'草稿':'待整理',date:today()})};const close=()=>{setModal('');setEditing('')};const saveItem=()=>{if(!newItem.title?.trim()){notify('请填写标题');return}const key=modal==='idea'?'ideas':modal==='topic'?'topics':modal==='content'?'contents':'breakdowns';const item:any={...newItem,id:editing||uid(),created:newItem.created||today()};if(key==='ideas'){item.favorite=newItem.favorite==='true';item.source??='';item.url??='';item.description??='';item.tags??='';item.attachment??=''}if(key==='contents'){item.views=Number(newItem.views||0);item.likes=Number(newItem.likes||0);item.comments=Number(newItem.comments||0);item.followers=Number(newItem.followers||0);item.script??=''}setData(d=>({...d,[key]:editing?(d[key] as any[]).map(x=>x.id===editing?item:x):[item,...d[key]]}));close();notify(editing?'已保存修改':'创建成功')};const remove=(key:keyof Data,id:string)=>{if(!confirm('确定删除这条记录吗？'))return;setData(d=>({...d,[key]:d[key].filter(x=>x.id!==id)}));notify('已删除')};const update=(key:keyof Data,id:string,changes:Record<string,any>)=>setData(d=>({...d,[key]:d[key].map(x=>x.id===id?{...x,...changes}:x)}));const convert=(idea:Idea)=>{setData(d=>({...d,topics:[{id:uid(),title:idea.title,platform:idea.platform,category:idea.category,status:'待评估',hook:idea.description,created:today()},...d.topics],ideas:d.ideas.map(i=>i.id===idea.id?{...i,status:'已转选题'}:i)}));notify('已转入我的选题')};const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
+const [videoReference, setVideoReference] = useState('');
+const useVideoReference = useCallback((reference: string) => {
+  setVideoReference(reference);
+  document.getElementById('detailed-script')?.scrollIntoView({ behavior: 'smooth' });
+}, []);
+const start = (topic: Topic) => {
+  setSelectedTopic(topic);
+  setAiTitle(topic.title);
+  setAiPlatform(topic.platform);
+  document.getElementById('reference-breakdown')?.scrollIntoView({ behavior: 'smooth' });
+};
+const published=data.contents.filter(c=>c.status==='已发布'),upcoming=data.contents.filter(c=>c.status==='待发布'),totals={views:published.reduce((a,c)=>a+c.views,0),engagement:published.reduce((a,c)=>a+c.likes+c.comments,0),followers:published.reduce((a,c)=>a+c.followers,0),count:published.length};const field=(key:string,label:string,kind='text',options?:string[])=> <label className="block"><span className="text-xs font-semibold text-slate-600">{label}</span>{options?<select className="field mt-1" value={newItem[key]||options[0]} onChange={e=>setNewItem(p=>({...p,[key]:e.target.value}))}>{options.map(o=><option key={o}>{o}</option>)}</select>:kind==='textarea'?<textarea rows={3} className="field mt-1" value={newItem[key]||''} onChange={e=>setNewItem(p=>({...p,[key]:e.target.value}))}/>:<input type={kind} className="field mt-1" value={newItem[key]||''} onChange={e=>setNewItem(p=>({...p,[key]:e.target.value}))}/>}</label>;const heading=(title:string,sub:string,button?:string,action?:()=>void)=><div className="flex flex-wrap justify-between items-start gap-3 mb-6"><div><h1 className="text-2xl font-bold">{title}</h1><p className="muted mt-1">{sub}</p></div>{button&&<button onClick={action} className="btn primary"><Plus size={17}/>{button}</button>}</div>;const tag=(s:string)=><span className={'pill '+(s==='高'||s==='已发布'||s==='已完成'?'bg-emerald-50 text-emerald-700':s==='待发布'||s==='准备创作'?'bg-amber-50 text-amber-700':'bg-slate-100 text-slate-600')}>{s}</span>;const empty=(s:string)=><div className="text-center py-14 text-slate-400"><Lightbulb className="mx-auto mb-3" size={28}/>{s}</div>;
 const home=<>{heading('早上好，创作者 ✨','把灵感变成作品，把每一次创作变成成长。','写下我的思路',()=>setPage('AI 创作中心'))}<div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">{[['总曝光量',fmt(totals.views),Eye,'本地已发布内容累计'],['总互动量',fmt(totals.engagement),Heart,'点赞 + 评论'],['新增粉丝',fmt(totals.followers),Users,'记录内容带来的增长'],['发布内容数',fmt(totals.count),Send,'已发布作品总数']].map(([name,value,Icon,desc]:any)=><div className="panel p-5" key={name}><div className="flex items-center justify-between"><span className="muted">{name}</span><Icon size={19} className="text-brand"/></div><div className="text-3xl font-bold mt-4">{value}</div><div className="text-xs text-slate-400 mt-2">{desc} · 上周对比待录入</div></div>)}</div><div className="grid lg:grid-cols-5 gap-5"><div className="lg:col-span-3 space-y-5"><section className="panel p-5"><div className="flex justify-between mb-4"><h2 className="h2">今日灵感</h2><button className="text-sm text-brand" onClick={()=>setPage('灵感中心')}>查看全部 →</button></div>{data.ideas.filter(i=>i.status!=='已归档').slice(0,3).map(i=><div className="py-3 border-b last:border-0 border-slate-100 flex items-center gap-3" key={i.id}><span className="rounded-xl bg-amber-50 text-amber-600 p-2"><Lightbulb size={17}/></span><div className="flex-1 min-w-0"><div className="font-medium truncate">{i.title}</div><div className="text-xs text-slate-400 mt-1">{i.platform} · {i.category}</div></div><button className="text-xs text-brand" onClick={()=>convert(i)}>转选题</button></div>)}<button className="btn secondary mt-4" onClick={()=>open('idea')}><Plus size={15}/>快速记录灵感</button></section><section className="panel p-5"><div className="flex justify-between mb-4"><h2 className="h2">待发表内容</h2><button className="text-sm text-brand" onClick={()=>setPage('发布计划')}>发布计划 →</button></div>{upcoming.length?upcoming.map(c=><div className="flex items-center justify-between py-3 border-b last:border-0" key={c.id}><div><div className="font-medium">{c.title}</div><div className="text-xs text-slate-400 mt-1">{c.platform} · 计划 {c.date}</div></div>{tag(c.status)}</div>):empty('暂无待发表内容')}</section></div><div className="lg:col-span-2 space-y-5"><section className="panel p-5"><h2 className="h2 mb-4">本周发布安排</h2>{data.contents.filter(c=>c.date>=dateAfter(-7)&&c.date<=dateAfter(7)).slice(0,5).map(c=><div key={c.id} className="flex gap-3 py-3 border-b last:border-0"><div className="bg-soft text-brand rounded-xl px-3 py-2 text-center text-xs font-bold">{c.date.slice(5)}</div><div className="min-w-0"><div className="text-sm font-medium truncate">{c.title}</div><div className="text-xs text-slate-400 mt-1">{c.platform} · {c.status}</div></div></div>)}<button className="text-sm text-brand mt-4" onClick={()=>setPage('发布计划')}>打开日程 →</button></section><section className="panel p-5"><h2 className="h2 mb-4">常用创作入口</h2><div className="grid grid-cols-2 gap-3">{[['记灵感',Lightbulb,()=>open('idea')],['新建选题',Layers3,()=>open('topic')],['写脚本',Sparkles,()=>setPage('AI 创作中心')],['安排发布',CalendarDays,()=>open('content')]].map(([t,I,fn]:any)=><button key={t} onClick={fn} className="bg-paper rounded-xl py-5 flex flex-col items-center gap-2 text-sm font-medium"><I className="text-brand" size={21}/>{t}</button>)}</div></section></div></div></>;
 const ideasFiltered=useMemo(()=>data.ideas.filter(i=>(filter==='全部'||filter===i.status||filter===i.platform||filter==='已收藏'&&i.favorite)&&[i.title,i.description,i.tags,i.category,i.source].join(' ').toLowerCase().includes(search.toLowerCase())).sort((a,b)=>sort==='最早'?a.created.localeCompare(b.created):sort==='优先级'?(['高','中','低'].indexOf(a.priority)-['高','中','低'].indexOf(b.priority)):b.created.localeCompare(a.created)),[data.ideas,filter,search,sort]);const ideas=<>{heading('灵感中心','捕捉每一个灵感，让好点子随时有处安放。','新建灵感',()=>open('idea'))}<div className="panel p-4 mb-5 flex flex-wrap gap-3 items-center"><div className="relative flex-1 min-w-48"><Search size={16} className="absolute top-3 left-3 text-slate-400"/><input className="field pl-9" placeholder="搜索标题、标签、描述…" value={search} onChange={e=>setSearch(e.target.value)}/></div><select className="field w-auto" value={filter} onChange={e=>setFilter(e.target.value)}>{['全部','已收藏','待整理','已整理','已转选题','已归档',...platforms].map(x=><option key={x}>{x}</option>)}</select><select className="field w-auto" value={sort} onChange={e=>setSort(e.target.value)}>{['最新','最早','优先级'].map(x=><option key={x}>{x}</option>)}</select>{selected.length>0&&<button className="btn secondary" onClick={()=>{setData(d=>({...d,ideas:d.ideas.map(i=>selected.includes(i.id)?{...i,status:'已归档'}:i)}));setSelected([]);notify('批量归档成功')}}><Archive size={15}/>归档 {selected.length} 条</button>}</div><div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">{ideasFiltered.map(i=><article className="panel p-5" key={i.id}><div className="flex justify-between items-start mb-3"><div className="flex items-center gap-2"><input type="checkbox" checked={selected.includes(i.id)} onChange={e=>setSelected(p=>e.target.checked?[...p,i.id]:p.filter(x=>x!==i.id))}/>{tag(i.platform)}{tag(i.priority+'优先级')}</div><button title="收藏" onClick={()=>update('ideas',i.id,{favorite:!i.favorite})}><Heart size={18} className={i.favorite?'fill-rose-400 text-rose-400':'text-slate-300'}/></button></div><h3 className="font-semibold text-base leading-relaxed">{i.title}</h3><p className="muted mt-2 line-clamp-2 min-h-10">{i.description||'暂无描述'}</p><div className="flex gap-2 flex-wrap my-4">{i.tags.split(',').filter(Boolean).map(t=><span className="pill bg-paper text-slate-500" key={t}>#{t.trim()}</span>)}</div><div className="text-xs text-slate-400 mb-4">{i.source||'个人记录'} · {i.created} · {i.status}</div>{i.url&&<a href={i.url} target="_blank" rel="noreferrer" className="text-xs text-brand flex items-center gap-1 mb-3"><ExternalLink size={13}/>打开来源</a>}<div className="flex items-center gap-2 border-t pt-3 border-slate-100"><button className="btn primary flex-1 !py-2" onClick={()=>convert(i)}>转选题 <ArrowRight size={14}/></button><button title="编辑" onClick={()=>open('idea',i)} className="p-2 text-slate-500"><PenLine size={16}/></button><button title="归档" onClick={()=>update('ideas',i.id,{status:'已归档'})} className="p-2 text-slate-500"><Archive size={16}/></button><button title="删除" onClick={()=>remove('ideas',i.id)} className="p-2 text-rose-400"><Trash2 size={16}/></button></div></article>)}</div>{!ideasFiltered.length&&empty('没有找到匹配的灵感')}</>;
-const topics=<>{heading('选题爆款拆解','从好点子到好作品，每一步都有迹可循。',tab==='我的选题'?'新建选题':'新增拆解',()=>open(tab==='我的选题'?'topic':'breakdown'))}<div className="flex justify-between flex-wrap gap-3 mb-5"><div className="flex bg-white rounded-xl p-1 border border-slate-100">{['我的选题','爆款拆解'].map(t=><button key={t} onClick={()=>setTab(t)} className={'px-5 py-2 rounded-lg text-sm '+(tab===t?'bg-soft text-brand font-semibold':'text-slate-500')}>{t}</button>)}</div>{tab==='我的选题'&&<div className="flex gap-2"><button onClick={()=>setBoard(false)} className={'btn '+(!board?'primary':'secondary')}>列表</button><button onClick={()=>setBoard(true)} className={'btn '+(board?'primary':'secondary')}>看板</button></div>}</div>{tab==='我的选题'?board?<div className="grid md:grid-cols-3 xl:grid-cols-5 gap-3 items-start">{topicStatuses.map(s=><div key={s} className="rounded-2xl bg-slate-100/70 p-3 min-h-48"><div className="font-semibold text-sm mb-3">{s} <span className="text-slate-400">{data.topics.filter(t=>t.status===s).length}</span></div>{data.topics.filter(t=>t.status===s).map(t=><div className="panel p-3 mb-2" key={t.id}><div className="text-sm font-medium">{t.title}</div><div className="text-xs text-slate-400 mt-2">{t.platform}</div><select className="field !p-1 mt-3" value={t.status} onChange={e=>update('topics',t.id,{status:e.target.value})}>{topicStatuses.map(s=><option key={s}>{s}</option>)}</select><button className="text-xs text-brand mt-3" onClick={()=>start(t)}>开始创作 →</button></div>)}</div>)}</div>:<div className="panel overflow-x-auto"><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500"><tr>{['选题','平台','方向','状态','操作'].map(x=><th className="p-4 font-medium" key={x}>{x}</th>)}</tr></thead><tbody>{data.topics.map(t=><tr key={t.id} className="border-t border-slate-100"><td className="p-4 font-medium">{t.title}</td><td className="p-4">{t.platform}</td><td className="p-4">{t.category}</td><td className="p-4"><select className="field !p-2" value={t.status} onChange={e=>update('topics',t.id,{status:e.target.value})}>{topicStatuses.map(s=><option key={s}>{s}</option>)}</select></td><td className="p-4 whitespace-nowrap"><button onClick={()=>start(t)} className="text-brand mr-3">开始创作</button><button onClick={()=>open('topic',t)} className="text-slate-500 mr-3">编辑</button><button onClick={()=>remove('topics',t.id)} className="text-rose-400">删除</button></td></tr>)}</tbody></table>{!data.topics.length&&empty('还没有选题')}</div>:null}
-<section hidden={tab !== '爆款拆解'} aria-label="爆款拆解">
-  <VideoBreakdownTool/>
-  <h2 className="h2 mb-3 mt-6">我的拆解记录</h2>
-  <div className="grid gap-4 md:grid-cols-2">{data.breakdowns.map(b=><div className="panel p-5" key={b.id}><div className="flex justify-between items-start">{tag(b.platform)}<div className="flex gap-3"><button onClick={()=>open('breakdown',b)}><PenLine size={16}/></button><button onClick={()=>remove('breakdowns',b.id)}><Trash2 size={16}/></button></div></div><h3 className="font-bold text-lg mt-3">{b.title}</h3>{[['开头 Hook',b.hook],['内容结构',b.structure],['可复用经验',b.lesson]].map(([k,v])=><p className="text-sm mt-3" key={k}><span className="text-slate-400">{k}：</span>{v}</p>)}{b.url&&<a className="text-brand text-sm mt-4 inline-flex items-center gap-1" target="_blank" rel="noreferrer" href={b.url}>查看原视频 <ExternalLink size={14}/></a>}</div>)}{!data.breakdowns.length&&empty('暂无拆解记录')}</div>
-</section></>;
 const [scriptDetails, setScriptDetails] = useState('');
 const [scriptProgress, setScriptProgress] = useState('');
 const [scriptError, setScriptError] = useState('');
@@ -189,6 +203,7 @@ useEffect(() => () => {
 
 const generate = () => {
   const topic = aiTitle.trim();
+  const detailed = page === '选题爆款拆解';
   const details = scriptDetails.trim();
   if ((!topic && !details) || scriptRunning.current) return;
   setScriptError('');
@@ -223,7 +238,11 @@ const generate = () => {
       };
       scriptWorker.current = worker;
     }
-    scriptWorker.current.postMessage({ topic, platform: aiPlatform, tone: aiTone, details });
+    scriptWorker.current.postMessage({
+      topic, platform: aiPlatform, tone: aiTone, details, detailed,
+      topicHook: detailed && selectedTopic?.title === topic ? selectedTopic.hook : '',
+      reference: detailed ? videoReference : '',
+    });
   } catch {
     stop('无法启动 AI。请刷新网页后再试。');
   }
@@ -249,15 +268,7 @@ useEffect(() => {
   document.getElementById(section)?.scrollIntoView();
 }, [page]);
 
-const ai = <>
-  <div className="flex flex-wrap items-start justify-between gap-2">
-    {heading('AI 创作中心', '把零散想法整理成一条能直接拍的短视频。')}
-    <div className="mb-4 flex flex-wrap gap-2">
-      <a className="btn secondary" href="#script-references"><FileText size={17}/>看文字版拍法</a>
-      <a className="btn secondary" href="#opinion-vlog">观点型 Vlog 方法</a>
-    </div>
-  </div>
-  <div className="grid gap-5 lg:grid-cols-5">
+const scriptEditor = <div className="grid gap-5 lg:grid-cols-5">
     <div className="panel space-y-4 p-6 lg:col-span-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="h2">我的思路</h2>
@@ -292,9 +303,13 @@ const ai = <>
           </select>
         </label>
       </div>
+      {page === '选题爆款拆解' && videoReference && <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 p-3 text-sm">
+        <span>已带入参考视频拆解</span>
+        <button type="button" className="text-brand" disabled={!!scriptProgress} onClick={() => setVideoReference('')}>移除参考</button>
+      </div>}
       <button type="button" className="btn primary w-full"
         disabled={(!aiTitle.trim() && !scriptDetails.trim()) || !!scriptProgress} onClick={generate}>
-        <Sparkles size={17}/>{scriptProgress ? '生成中…' : 'AI 整理成完整脚本'}
+        <Sparkles size={17}/>{scriptProgress ? '生成中…' : page === '选题爆款拆解' ? 'AI 生成详细脚本' : 'AI 整理成完整脚本'}
       </button>
       <p className="text-xs leading-relaxed text-slate-500">首次使用需要联网下载模型。请用支持 WebGPU 的电脑浏览器。</p>
       {scriptProgress && <p role="status" className="text-sm text-slate-600">{scriptProgress}</p>}
@@ -321,7 +336,41 @@ const ai = <>
         disabled={!!scriptProgress} onChange={e => setAiResult(e.target.value)}
         placeholder="完整脚本会显示在这里，包括标题、开场、分镜、口播和结尾。"/>
     </div>
+  </div>;
+const topics = <>
+  {heading('选题爆款拆解', '选一条自己的选题，拆解参考视频，再写成能拍的脚本。','新建选题',()=>open('topic'))}
+  <section className="mb-6" aria-labelledby="my-topics-title">
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <h2 id="my-topics-title" className="h2">我的选题</h2>
+      <div className="flex gap-2"><button onClick={()=>setBoard(false)} className={'btn '+(!board?'primary':'secondary')}>列表</button><button onClick={()=>setBoard(true)} className={'btn '+(board?'primary':'secondary')}>看板</button></div>
+    </div>
+{board?<div className="grid md:grid-cols-3 xl:grid-cols-5 gap-3 items-start">{topicStatuses.map(s=><div key={s} className="rounded-2xl bg-slate-100/70 p-3 min-h-48"><div className="font-semibold text-sm mb-3">{s} <span className="text-slate-400">{data.topics.filter(t=>t.status===s).length}</span></div>{data.topics.filter(t=>t.status===s).map(t=><div className="panel p-3 mb-2" key={t.id}><div className="text-sm font-medium">{t.title}</div><div className="text-xs text-slate-400 mt-2">{t.platform}</div><select className="field !p-1 mt-3" value={t.status} onChange={e=>update('topics',t.id,{status:e.target.value})}>{topicStatuses.map(s=><option key={s}>{s}</option>)}</select><button className="text-xs text-brand mt-3" onClick={()=>start(t)}>用这个选题 →</button></div>)}</div>)}</div>:<div className="panel overflow-x-auto"><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500"><tr>{['选题','平台','方向','状态','操作'].map(x=><th className="p-4 font-medium" key={x}>{x}</th>)}</tr></thead><tbody>{data.topics.map(t=><tr key={t.id} className="border-t border-slate-100"><td className="p-4 font-medium">{t.title}</td><td className="p-4">{t.platform}</td><td className="p-4">{t.category}</td><td className="p-4"><select className="field !p-2" value={t.status} onChange={e=>update('topics',t.id,{status:e.target.value})}>{topicStatuses.map(s=><option key={s}>{s}</option>)}</select></td><td className="p-4 whitespace-nowrap"><button onClick={()=>start(t)} className="text-brand mr-3">用这个选题</button><button onClick={()=>open('topic',t)} className="text-slate-500 mr-3">编辑</button><button onClick={()=>remove('topics',t.id)} className="text-rose-400">删除</button></td></tr>)}</tbody></table>{!data.topics.length&&empty('还没有选题')}</div> }
+  </section>
+  <section id="reference-breakdown" className="mb-6 scroll-mt-24" aria-label="参考视频拆解">
+    {selectedTopic && <p className="mb-3 text-sm text-slate-600">当前选题：{selectedTopic.title}</p>}
+    <VideoBreakdownTool topic={selectedTopic?.title ?? ''} onReference={useVideoReference}/>
+  </section>
+  <section id="detailed-script" className="mb-6 scroll-mt-24" aria-labelledby="detailed-script-title">
+    <h2 id="detailed-script-title" className="h2 mb-3">详细内容脚本</h2>
+    {scriptEditor}
+  </section>
+  <section aria-label="我的拆解记录">
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <h2 className="h2">我的拆解记录</h2>
+      <button className="btn secondary" onClick={()=>open('breakdown')}>新增拆解记录</button>
+    </div>
+  <div className="grid gap-4 md:grid-cols-2">{data.breakdowns.map(b=><div className="panel p-5" key={b.id}><div className="flex justify-between items-start">{tag(b.platform)}<div className="flex gap-3"><button onClick={()=>open('breakdown',b)}><PenLine size={16}/></button><button onClick={()=>remove('breakdowns',b.id)}><Trash2 size={16}/></button></div></div><h3 className="font-bold text-lg mt-3">{b.title}</h3>{[['开头 Hook',b.hook],['内容结构',b.structure],['可复用经验',b.lesson]].map(([k,v])=><p className="text-sm mt-3" key={k}><span className="text-slate-400">{k}：</span>{v}</p>)}{b.url&&<a className="text-brand text-sm mt-4 inline-flex items-center gap-1" target="_blank" rel="noreferrer" href={b.url}>查看原视频 <ExternalLink size={14}/></a>}</div>)}{!data.breakdowns.length&&empty('暂无拆解记录')}</div>
+</section></>;
+
+const ai = <>
+  <div className="flex flex-wrap items-start justify-between gap-2">
+    {heading('AI 创作中心', '把零散想法整理成一条能直接拍的短视频。')}
+    <div className="mb-4 flex flex-wrap gap-2">
+      <a className="btn secondary" href="#script-references"><FileText size={17}/>看文字版拍法</a>
+      <a className="btn secondary" href="#opinion-vlog">观点型 Vlog 方法</a>
+    </div>
   </div>
+  {scriptEditor}
   <section id="script-references" className="panel mt-5 scroll-mt-20 p-6" aria-labelledby="script-references-title">
     <h2 id="script-references-title" className="h2 mb-4">文字版拍法参考</h2>
     <div className="grid gap-4 md:grid-cols-2">

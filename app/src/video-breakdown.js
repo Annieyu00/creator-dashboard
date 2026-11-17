@@ -1,18 +1,18 @@
 import styles from './video-breakdown.css?inline';
 import markup from './video-breakdown.html?raw';
 
-export function mountVideoBreakdown(host) {
+export function mountVideoBreakdown(host, onReference) {
   const root = host.shadowRoot ?? host.attachShadow({ mode: 'open' });
   const style = document.createElement('style');
   style.textContent = styles;
   const template = document.createElement('template');
   template.innerHTML = markup;
   root.replaceChildren(style, template.content.cloneNode(true));
-  initializeVideoBreakdown(root);
+  initializeVideoBreakdown(root, onReference);
   return () => root.replaceChildren();
 }
 
-function initializeVideoBreakdown(root) {
+function initializeVideoBreakdown(root, onReference) {
 var $ = function (id) { return root.getElementById(id);};
 
 /* ---------- helpers ---------- */
@@ -130,6 +130,7 @@ return picked;
 
 /* ---------- demo ---------- */
 $("btnDemo").addEventListener("click", function () {
+$("fUrl").value = "";
 $("fTitle").value = "普通人做自媒体，千万别一上来就买设备";
 $("fPlatform").value = "抖音";
 $("fTopic").value = "新手直播带货";
@@ -149,20 +150,22 @@ $("formErr").classList.remove("show");
 toast("示例已载入，点「开始拆解」");
 });
 $("btnClear").addEventListener("click", function () {
-["fTitle", "fTopic", "fScript", "fViews", "fLikes", "fComments", "fShares"].forEach(function (id) { $(id).value = "";});
+["fTitle", "fUrl", "fTopic", "fScript", "fViews", "fLikes", "fComments", "fShares"].forEach(function (id) { $(id).value = "";});
 $("formErr").classList.remove("show");
 });
 
 /* ---------- analyze ---------- */
 var lastReport = "";
+var lastReference = "";
 $("btnAnalyze").addEventListener("click", function () {
 var title = $("fTitle").value.trim();
+var sourceUrl = $("fUrl").value.trim();
 var platform = $("fPlatform").value;
 var topic = $("fTopic").value.trim();
 var script = $("fScript").value.trim();
 var err = $("formErr");
 if (!script) {
-err.textContent = "先把要拆解的文案 / 字幕粘贴进来，这是拆解的原料。";
+err.textContent = "请粘贴视频字幕、口播或镜头笔记。链接用来标记来源。";
 err.classList.add("show");
 $("fScript").focus();
 return;
@@ -204,11 +207,11 @@ var verdictBits = [];
 if (hookHits.length) verdictBits.push("开头用了「" + hookHits[0].t + "」");
 if (hasPain && hasMethod) verdictBits.push("结构是完整的痛点 → 方法型");
 else if (hasMethod) verdictBits.push("干货密度高");
-if (shareRate!= null && shareRate >= 0.01) verdictBits.push("转发率突出，靠的是观众愿意转给别人");
-else if (commentRate!= null && commentRate >= 0.003) verdictBits.push("评论率突出，靠的是话题性");
-else if (likeRate!= null && likeRate >= 0.05) verdictBits.push("赞播比突出，靠的是强共鸣");
+if (shareRate!= null && shareRate >= 0.01) verdictBits.push("转发率较高，值得观察内容中便于分享的部分");
+else if (commentRate!= null && commentRate >= 0.003) verdictBits.push("评论率较高，可结合评论内容判断话题性");
+else if (likeRate!= null && likeRate >= 0.05) verdictBits.push("点赞率较高，可结合观众反馈判断共鸣点");
 $("vTitle").textContent = (title || "这条视频") + " · " + platform;
-$("vText").textContent = "一句话结论：" + (verdictBits.length? verdictBits.join("；") + "。": "结构偏平，主要靠题材本身的流量。") +
+$("vText").textContent = "可能的传播线索：" + (verdictBits.length? verdictBits.join("；") + "。": "现有字幕和数据暂未显示明确的传播线索。") +
 " 全文约 " + totalChars + " 字，口播时长约 " + Math.round(totalSec) + " 秒，共 " + segs.length + " 段。";
 
 /* --- metrics --- */
@@ -371,11 +374,28 @@ md.push("\n### 分镜表");
 mdShots.forEach(function (s) { md.push(s.n + ". [" + s.t + "｜" + s.role + "｜" + s.view + "] " + s.line + "（拍法：" + s.act + "）");});
 md.push("\n### 拍摄清单");
 checks.forEach(function (c) { md.push("- [] " + c);});
+if (sourceUrl) md.splice(1, 0, "参考视频：" + sourceUrl);
 lastReport = md.join("\n");
+lastReference = [
+  "参考标题：" + (title || "未填写"),
+  "参考链接：" + (sourceUrl || "未填写"),
+  "参考开场：" + sents[0].slice(0, 220),
+  "拆解结构：" + segs.slice(0, 14).map(function (s) { return s.role; }).join(" → "),
+  "可观察的情绪：" + (emoHits.join("、") || "未识别"),
+  "可见的内容线索：" + sents.slice(1, 6).map(s => s.slice(0, 130)).join(" / "),
+  "用户填入的数据：" + (views ? "播放 " + fmtNum(views) : "播放未提供") +
+    (likes != null ? "，点赞 " + fmtNum(likes) : "") +
+    (comments != null ? "，评论 " + fmtNum(comments) : "") +
+    (shares != null ? "，转发 " + fmtNum(shares) : "")
+].join("\n");
 
 $("emptyState").style.display = "none";
 $("results").classList.add("show");
 $("results").scrollIntoView({ behavior: "smooth", block: "start"});
+});
+
+$("btnUseReference").addEventListener("click", function () {
+  if (lastReference) onReference(lastReference);
 });
 
 $("btnCopy").addEventListener("click", function () {
